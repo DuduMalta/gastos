@@ -3,98 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Gastos Pessoais</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>Controle de Gastos</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .btn-add {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .btn-add:hover {
-            background-color: #45a049;
-        }
-        .btn-view {
-            background-color: #2196F3;
-            color: white;
-        }
-        .btn-view:hover {
-            background-color: #0b7dda;
-        }
-        #gastosList {
-            margin-top: 20px;
-        }
-        .gasto-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-        }
-        .total {
-            font-weight: bold;
-            margin-top: 20px;
-            font-size: 18px;
-        }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        input, button { padding: 8px; margin: 5px 0; }
     </style>
 </head>
 <body>
-    <!-- No final do <body>, antes do app.js -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <h1>Controle de Gastos</h1>
+    <input type="text" id="descricao" placeholder="Descrição">
+    <input type="number" id="valor" placeholder="Valor">
+    <button onclick="adicionarGasto()">Adicionar</button>
+    <ul id="listaGastos"></ul>
 
-<script>
-  // Cole AQUI o firebaseConfig que você copiou
-  const firebaseConfig = {
-    apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
-    authDomain: "financia-dudu.firebaseapp.com",
-    databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
-    projectId: "financia-dudu",
-    storageBucket: "financia-dudu.firebasestorage.app",
-    messagingSenderId: "1017028955293",
-    appId: "1:1017028955293:web:3269e4402643b48613d874"
-  };
+    <script>
+        // Configuração do Firebase (substitua pelos seus dados)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB_8NDa0J4LqFiyAlqgkOuJbwVxI9X2X2E",
+            authDomain: "controle-gastos-5d942.firebaseapp.com",
+            databaseURL: "https://controle-gastos-5d942-default-rtdb.firebaseio.com",
+            projectId: "controle-gastos-5d942",
+            storageBucket: "controle-gastos-5d942.appspot.com",
+            messagingSenderId: "108583061894",
+            appId: "1:108583061894:web:4c8f8d1e4e8d5e8a4d3e9a"
+        };
 
-  // Inicializa o Firebase
-  firebase.initializeApp(firebaseConfig);
-</script>
-    <div class="container">
-        <h1>💰 Meu Controle de Gastos</h1>
-        
-        <button id="btnAddGasto" class="btn btn-add">➕ Adicionar Gasto</button>
-        <button id="btnViewGastos" class="btn btn-view">📊 Ver Resumo</button>
-        
-        <div id="gastosList"></div>
-        <div id="totalGastos" class="total"></div>
-    </div>
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-    <script src="app.js"></script>
+        function adicionarGasto() {
+            const descricao = document.getElementById('descricao').value;
+            const valor = document.getElementById('valor').value;
+            
+            database.ref('gastos').push({
+                descricao: descricao,
+                valor: valor,
+                data: new Date().toISOString()
+            });
+            
+            document.getElementById('descricao').value = '';
+            document.getElementById('valor').value = '';
+        }
+
+        // Carrega gastos existentes
+        database.ref('gastos').on('value', (snapshot) => {
+            const lista = document.getElementById('listaGastos');
+            lista.innerHTML = '';
+            
+            snapshot.forEach((childSnapshot) => {
+                const gasto = childSnapshot.val();
+                const item = document.createElement('li');
+                item.textContent = `${gasto.descricao}: R$ ${gasto.valor}`;
+                lista.appendChild(item);
+            });
+        });
+    </script>
 </body>
 </html>
