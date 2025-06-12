@@ -1,610 +1,125 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Controle de Gastos Mensal</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --danger: #f72585;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --white: #ffffff;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f0f2f5;
-            color: var(--dark);
-            line-height: 1.6;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            padding: 0;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-            padding: 25px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .month-header {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            padding: 25px;
-        }
-        
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .input-group > * {
-            flex: 1;
-            min-width: 120px;
-        }
-        
-        input, select {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-        }
-        
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            color: var(--white);
-        }
-        
-        .btn-primary:hover {
-            background-color: #3a56d4;
-        }
-        
-        .btn-success {
-            background-color: var(--success);
-            color: var(--white);
-        }
-        
-        .btn-success:hover {
-            background-color: #3ab5d9;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger);
-            color: var(--white);
-        }
-        
-        .btn-danger:hover {
-            background-color: #e5177a;
-        }
-        
-        .total-display {
-            background-color: var(--light);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: var(--white);
-        }
-        
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        th {
-            background-color: #f8f9fa;
-            font-weight: 500;
-            color: var(--gray);
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-        
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .actions {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .chart-container {
-            margin-top: 30px;
-            background-color: var(--white);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: var(--white);
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 600px) {
-            .input-group {
-                flex-direction: column;
-            }
-            
-            .input-group > * {
-                width: 100%;
-            }
-            
-            .main-content {
-                padding: 15px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Controle de Gastos</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .gasto { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
+    button { margin-right: 5px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Controle de Gastos Mensal</h1>
-            <div class="month-header" id="currentMonth"></div>
-        </header>
-        
-        <div class="main-content">
-            <div class="input-group">
-                <input type="number" id="valor" placeholder="Valor (R$)" step="0.01" required>
-                <select id="categoria">
-                    <option value="Alimentação">Alimentação</option>
-                    <option value="Compras Online">Compras Online</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Outros">Outros</option>
-                </select>
-                <button onclick="adicionarGasto()" class="btn-primary">
-                    <span id="addIcon">+</span> Adicionar
-                </button>
-            </div>
+  <h2>Registrar Gasto</h2>
+  <form id="form-gasto">
+    <input type="text" id="descricao" placeholder="Descrição" required />
+    <input type="number" id="valor" placeholder="Valor" required />
+    <input type="date" id="data" required />
+    <input type="text" id="categoria" placeholder="Categoria" required />
+    <button type="submit">Adicionar Gasto</button>
+  </form>
 
-            <div class="total-display">
-                Total do Mês: <span id="totalMes">R$ 0,00</span>
-            </div>
+  <h2>Lista de Gastos</h2>
+  <div id="lista-gastos"></div>
 
-            <div class="input-group">
-                <button onclick="exportarEResetar()" class="btn-success">
-                    <span id="exportIcon">📊</span> Exportar e Resetar
-                </button>
-            </div>
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      databaseURL: "https://SEU_DOMINIO.firebaseio.com",
+      projectId: "SEU_PROJETO_ID",
+      storageBucket: "SEU_BUCKET.appspot.com",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SUA_APP_ID"
+    };
 
-            <div class="table-container">
-                <table id="tabelaGastos">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Categoria</th>
-                            <th>Valor</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaGastos"></tbody>
-                </table>
-            </div>
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-            <div class="chart-container">
-                <canvas id="graficoGastos"></canvas>
-            </div>
-        </div>
-    </div>
+    const form = document.getElementById("form-gasto");
+    const lista = document.getElementById("lista-gastos");
 
-    <script>
-        // Configuração do Firebase (substitua pelos seus dados)
-        const firebaseConfig = {
-            apiKey: "AIzaSyB_8NDa0J4LqFiyAlqgkOuJbwVxI9X2X2E",
-            authDomain: "controle-gastos-5d942.firebaseapp.com",
-            databaseURL: "https://controle-gastos-5d942-default-rtdb.firebaseio.com",
-            projectId: "controle-gastos-5d942",
-            storageBucket: "controle-gastos-5d942.appspot.com",
-            messagingSenderId: "108583061894",
-            appId: "1:108583061894:web:4c8f8d1e4e8d5e8a4d3e9a"
-        };
+    // Adicionar gasto
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const descricao = document.getElementById("descricao").value.trim();
+      const valor = parseFloat(document.getElementById("valor").value);
+      const data = document.getElementById("data").value;
+      const categoria = document.getElementById("categoria").value.trim();
 
-        // Inicializa o Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        let grafico;
-        let mesAtual = new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-        let gastosLocais = [];
+      if (!descricao || isNaN(valor) || !data || !categoria) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
 
-        // Atualiza o cabeçalho com o mês atual
-        function atualizarMesAtual() {
-            document.getElementById('currentMonth').textContent = mesAtual.charAt(0).toUpperCase() + mesAtual.slice(1);
-        }
+      const novoGasto = {
+        descricao,
+        valor,
+        data,
+        categoria
+      };
 
-        // Adiciona um novo gasto
-        function adicionarGasto() {
-            const valorInput = document.getElementById('valor');
-            const categoriaSelect = document.getElementById('categoria');
-            
-            const valor = parseFloat(valorInput.value);
-            const categoria = categoriaSelect.value;
-            const data = new Date().toLocaleString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            
-            if (isNaN(valor) {
-                alert('Digite um valor válido!');
-                return;
-            }
+      database.ref("gastos").push(novoGasto);
+      form.reset();
+    });
 
-            // Botão de loading
-            const addIcon = document.getElementById('addIcon');
-            addIcon.innerHTML = '<div class="loading"></div>';
-            
-            // Cria objeto do gasto
-            const novoGasto = {
-                valor: valor,
-                categoria: categoria,
-                data: data,
-                mes: mesAtual,
-                key: 'temp-' + Date.now() // Chave temporária
-            };
+    // Carregar e mostrar gastos
+    function carregarGastos() {
+      database.ref("gastos").on("value", function (snapshot) {
+        lista.innerHTML = "";
+        snapshot.forEach(function (childSnapshot) {
+          const id = childSnapshot.key;
+          const gasto = childSnapshot.val();
 
-            // Adiciona localmente
-            gastosLocais.push(novoGasto);
-            atualizarInterface();
+          const div = document.createElement("div");
+          div.className = "gasto";
+          div.innerHTML = `
+            <strong>${gasto.descricao}</strong><br>
+            Valor: R$ ${gasto.valor.toFixed(2)}<br>
+            Data: ${gasto.data}<br>
+            Categoria: ${gasto.categoria}<br>
+            <button onclick="editarGasto('${id}', '${gasto.descricao}', '${gasto.valor}', '${gasto.data}', '${gasto.categoria}')">Editar</button>
+            <button onclick="excluirGasto('${id}')">Excluir</button>
+          `;
+          lista.appendChild(div);
+        });
+      });
+    }
 
-            // Envia para o Firebase
-            database.ref('gastos').push({
-                valor: valor,
-                categoria: categoria,
-                data: data,
-                mes: mesAtual
-            }).then((snapshot) => {
-                // Atualiza com a chave real quando retornar do Firebase
-                const index = gastosLocais.findIndex(g => g.key === novoGasto.key);
-                if (index !== -1) {
-                    gastosLocais[index].key = snapshot.key;
-                }
-            }).catch(error => {
-                console.error("Erro ao salvar no Firebase:", error);
-                alert('Erro ao salvar o gasto. Verifique sua conexão.');
-            }).finally(() => {
-                addIcon.textContent = '+';
-            });
-            
-            valorInput.value = '';
-            categoriaSelect.selectedIndex = 0;
-            valorInput.focus();
-        }
+    // Excluir gasto
+    function excluirGasto(id) {
+      if (confirm("Tem certeza que deseja excluir este gasto?")) {
+        database.ref("gastos/" + id).remove();
+      }
+    }
 
-        // Remove um gasto
-        function removerGasto(key) {
-            if (confirm('Tem certeza que deseja remover este gasto?')) {
-                // Remove localmente
-                gastosLocais = gastosLocais.filter(gasto => gasto.key !== key);
-                atualizarInterface();
-                
-                // Remove do Firebase (se não for um item temporário)
-                if (!key.startsWith('temp-')) {
-                    database.ref('gastos/' + key).remove();
-                }
-            }
-        }
+    // Editar gasto
+    function editarGasto(id, descricao, valor, data, categoria) {
+      const novaDescricao = prompt("Descrição:", descricao);
+      const novoValor = parseFloat(prompt("Valor:", valor));
+      const novaData = prompt("Data (YYYY-MM-DD):", data);
+      const novaCategoria = prompt("Categoria:", categoria);
 
-        // Exporta para Excel e reseta o mês
-        function exportarEResetar() {
-            if (gastosLocais.length === 0) {
-                alert('Nenhum gasto para exportar este mês!');
-                return;
-            }
+      if (!novaDescricao || isNaN(novoValor) || !novaData || !novaCategoria) {
+        alert("Valores inválidos.");
+        return;
+      }
 
-            if (confirm(`Deseja exportar os gastos de ${mesAtual} e iniciar um novo mês?`)) {
-                const exportIcon = document.getElementById('exportIcon');
-                exportIcon.innerHTML = '<div class="loading"></div>';
-                
-                exportToExcel().then(() => {
-                    resetarMes();
-                    exportIcon.textContent = '📊';
-                });
-            }
-        }
+      const gastoAtualizado = {
+        descricao: novaDescricao,
+        valor: novoValor,
+        data: novaData,
+        categoria: novaCategoria
+      };
 
-        // Exporta para Excel
-        function exportToExcel() {
-            return new Promise((resolve) => {
-                const gastosDoMes = gastosLocais.filter(gasto => gasto.mes === mesAtual);
-                let total = 0;
-                
-                // Organiza os dados para o Excel
-                const dadosExcel = gastosDoMes.map(gasto => {
-                    total += gasto.valor;
-                    return {
-                        'Data': gasto.data,
-                        'Categoria': gasto.categoria,
-                        'Valor (R$)': gasto.valor
-                    };
-                });
+      database.ref("gastos/" + id).update(gastoAtualizado);
+    }
 
-                // Adiciona o total
-                dadosExcel.push({
-                    'Data': 'TOTAL',
-                    'Categoria': '',
-                    'Valor (R$)': total
-                });
-
-                // Cria a planilha
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(dadosExcel);
-                
-                // Formatação automática
-                ws['!cols'] = [
-                    { width: 20 }, // Data
-                    { width: 20 }, // Categoria
-                    { width: 15 }  // Valor
-                ];
-
-                // Formata cabeçalho
-                const headerStyle = { 
-                    font: { bold: true, color: { rgb: "FFFFFF" } },
-                    fill: { fgColor: { rgb: "4361EE" } }
-                };
-                
-                for (let key in dadosExcel[0]) {
-                    const cell = XLSX.utils.encode_cell({ c: Object.keys(dadosExcel[0]).indexOf(key), r: 0 });
-                    if (!ws[cell]) ws[cell] = {};
-                    ws[cell].s = headerStyle;
-                }
-
-                // Formata a linha do total
-                const totalRow = dadosExcel.length - 1;
-                const totalCell = XLSX.utils.encode_cell({ c: 2, r: totalRow });
-                if (!ws[totalCell]) ws[totalCell] = {};
-                ws[totalCell].s = { font: { bold: true, color: { rgb: "FF0000" } } };
-
-                XLSX.utils.book_append_sheet(wb, ws, "Gastos");
-                
-                // Gera e faz download do arquivo
-                XLSX.writeFile(wb, `Gastos_${mesAtual.replace(' ', '_')}.xlsx`);
-                resolve();
-            });
-        }
-
-        // Reseta para um novo mês
-        function resetarMes() {
-            // Atualiza para o novo mês
-            const now = new Date();
-            mesAtual = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-            atualizarMesAtual();
-            
-            // Filtra apenas gastos do novo mês
-            gastosLocais = gastosLocais.filter(gasto => gasto.mes === mesAtual);
-            
-            // Atualiza a interface
-            atualizarInterface();
-        }
-
-        // Atualiza o gráfico
-        function atualizarGrafico(dados) {
-            const ctx = document.getElementById('graficoGastos').getContext('2d');
-            
-            if (grafico) {
-                grafico.destroy();
-            }
-
-            grafico = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(dados),
-                    datasets: [{
-                        data: Object.values(dados),
-                        backgroundColor: [
-                            '#4361ee',
-                            '#4cc9f0',
-                            '#7209b7',
-                            '#f72585',
-                            '#4895ef'
-                        ],
-                        borderWidth: 0,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Distribuição por Categoria - ${mesAtual}`,
-                            font: {
-                                size: 16,
-                                weight: '500'
-                            },
-                            padding: {
-                                top: 10,
-                                bottom: 20
-                            }
-                        },
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20,
-                                font: {
-                                    size: 12
-                                },
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: R$ ${value.toFixed(2)} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
-                    cutout: '65%'
-                }
-            });
-        }
-
-        // Atualiza toda a interface
-        function atualizarInterface() {
-            const lista = document.getElementById('listaGastos');
-            lista.innerHTML = '';
-            
-            const gastosDoMes = gastosLocais.filter(gasto => gasto.mes === mesAtual);
-            let total = 0;
-            
-            // Ordena por data (mais recente primeiro)
-            gastosDoMes.sort((a, b) => new Date(b.data) - new Date(a.data));
-            
-            // Preenche a tabela
-            gastosDoMes.forEach(gasto => {
-                total += gasto.valor;
-                
-                const row = document.createElement('tr');
-                row.dataset.key = gasto.key;
-                row.innerHTML = `
-                    <td>${gasto.data}</td>
-                    <td>${gasto.categoria}</td>
-                    <td>R$ ${gasto.valor.toFixed(2)}</td>
-                    <td class="actions">
-                        <button onclick="removerGasto('${gasto.key}')" class="btn-danger" style="padding: 5px 10px; font-size: 0.8rem;">×</button>
-                    </td>
-                `;
-                lista.appendChild(row);
-            });
-
-            // Atualiza o total
-            document.getElementById('totalMes').textContent = `R$ ${total.toFixed(2)}`;
-            
-            // Atualiza o gráfico
-            if (gastosDoMes.length > 0) {
-                const porCategoria = gastosDoMes.reduce((acc, gasto) => {
-                    acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
-                    return acc;
-                }, {});
-                atualizarGrafico(porCategoria);
-            } else {
-                atualizarGrafico({});
-            }
-        }
-
-        // Carrega os gastos do Firebase
-        function carregarGastos() {
-            database.ref('gastos').orderByChild('mes').equalTo(mesAtual).once('value', (snapshot) => {
-                gastosLocais = [];
-                
-                snapshot.forEach((childSnapshot) => {
-                    const gasto = childSnapshot.val();
-                    gasto.key = childSnapshot.key;
-                    gastosLocais.push(gasto);
-                });
-                
-                atualizarInterface();
-            });
-        }
-
-        // Inicialização
-        window.onload = function() {
-            atualizarMesAtual();
-            carregarGastos();
-        };
-    </script>
+    // Inicializar
+    carregarGastos();
+  </script>
 </body>
 </html>
