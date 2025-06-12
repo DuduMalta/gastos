@@ -9,31 +9,65 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0; font-family: 'Segoe UI', sans-serif;
-      background: #0f0f0f; color: #e0e0e0;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+      color: #e0e0e0;
     }
     .container {
-      max-width: 600px; margin: auto; padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
     }
     h1 {
-      text-align: center; color: #00ffc3;
+      text-align: center;
+      color: #00ffc3;
     }
     input, button {
-      width: 100%; padding: 10px; margin: 5px 0;
-      border: none; border-radius: 10px;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
     }
     input {
-      background: #1e1e1e; color: white;
+      background: #1e1e1e;
+      color: #fff;
     }
     button {
-      background: #00ffc3; color: #000; font-weight: bold;
-      transition: background 0.3s;
+      background: #00ffc3;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
     }
-    button:hover { background: #00cfa8; }
-    .gasto { background: #1a1a1a; margin: 5px 0; padding: 10px; border-radius: 10px; }
-    .gasto span { display: inline-block; width: 50%; }
-    .dia { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
-    canvas { background: #1e1e1e; border-radius: 10px; margin-top: 20px; }
+    button:hover {
+      background: #00cfa8;
+    }
+    .gasto {
+      background: #262626;
+      padding: 10px;
+      border-radius: 10px;
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dia {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #333;
+    }
+    canvas {
+      background: #1e1e1e;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+    .botoes {
+      display: flex;
+      gap: 5px;
+    }
   </style>
 </head>
 <body>
@@ -51,33 +85,40 @@
       authDomain: "financia-dudu.firebaseapp.com",
       databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
       projectId: "financia-dudu",
-      storageBucket: "financia-dudu.firebasestorage.app",
+      storageBucket: "financia-dudu.appspot.com",
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function getDataHoje() {
-      const d = new Date();
-      return d.toISOString().split('T')[0];
-    }
+    const getDataHoje = () => new Date().toISOString().split('T')[0];
 
     function adicionarGasto() {
-      const valor = parseFloat(document.getElementById('valor').value);
+      const valorInput = document.getElementById('valor');
+      const valor = parseFloat(valorInput.value);
       if (isNaN(valor)) return;
+
       const data = getDataHoje();
       const id = Date.now();
-      db.ref('gastos/' + data + '/' + id).set({ valor });
-      document.getElementById('valor').value = '';
+      db.ref(`gastos/${data}/${id}`).set({ valor })
+        .then(() => valorInput.value = '');
     }
 
     function atualizarGasto(data, id, novoValor) {
-      db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor) });
+      db.ref(`gastos/${data}/${id}`).update({ valor: parseFloat(novoValor) });
     }
 
     function excluirGasto(data, id) {
-      db.ref('gastos/' + data + '/' + id).remove();
+      db.ref(`gastos/${data}/${id}`).remove();
+    }
+
+    function editarGasto(data, id, valorAtual) {
+      const novoValor = prompt("Editar valor:", valorAtual);
+      if (novoValor !== null && !isNaN(novoValor)) {
+        atualizarGasto(data, id, novoValor);
+      }
     }
 
     const historicoEl = document.getElementById('historico');
@@ -91,9 +132,9 @@
 
       Object.keys(dados).sort().forEach(data => {
         const gastos = dados[data];
-        const total = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
+        const totalDia = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
         labels.push(data);
-        valores.push(total);
+        valores.push(totalDia);
 
         const diaDiv = document.createElement('div');
         diaDiv.className = 'dia';
@@ -102,12 +143,13 @@
         Object.entries(gastos).forEach(([id, gasto]) => {
           const div = document.createElement('div');
           div.className = 'gasto';
-
           div.innerHTML = `
             <span>R$ ${gasto.valor.toFixed(2)}</span>
-            <button onclick="editarGasto('${data}','${id}', ${gasto.valor})">✏️</button>
-            <button onclick="excluirGasto('${data}','${id}')">🗑️</button>`;
-
+            <div class="botoes">
+              <button onclick="editarGasto('${data}', '${id}', ${gasto.valor})">✏️</button>
+              <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
+            </div>
+          `;
           diaDiv.appendChild(div);
         });
 
@@ -118,26 +160,22 @@
       grafico = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: labels,
+          labels,
           datasets: [{
-            label: 'Total por dia',
+            label: 'Total por dia (R$)',
             backgroundColor: '#00ffc3',
             data: valores
           }]
         },
         options: {
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
+          scales: {
+            y: { beginAtZero: true },
+            x: { ticks: { color: '#fff' } }
+          }
         }
       });
     });
-
-    function editarGasto(data, id, valorAtual) {
-      const novoValor = prompt("Editar valor:", valorAtual);
-      if (novoValor !== null && !isNaN(novoValor)) {
-        atualizarGasto(data, id, novoValor);
-      }
-    }
   </script>
 </body>
 </html>
