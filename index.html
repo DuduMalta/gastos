@@ -45,107 +45,96 @@
   </div>
 
   <script>
-    // Firebase config (substitua com o seu se necessário)
-    const firebaseConfig = {
-      apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
-      authDomain: "financia-dudu.firebaseapp.com",
-      databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
-      projectId: "financia-dudu",
-      storageBucket: "financia-dudu.appspot.com",
-      messagingSenderId: "1017028955293",
-      appId: "1:1017028955293:web:3269e4402643b48613d874"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
+    authDomain: "financia-dudu.firebaseapp.com",
+    databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
+    projectId: "financia-dudu",
+    storageBucket: "financia-dudu.appspot.com",
+    messagingSenderId: "1017028955293",
+    appId: "1:1017028955293:web:3269e4402643b48613d874"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  function getDataHoje() {
+    return new Date().toISOString().split('T')[0];
+  }
 
-    function getDataHoje() {
-      const d = new Date();
-      return d.toISOString().split('T')[0];
+  async function adicionarGasto() {
+    const input = document.getElementById('valor');
+    const raw = input.value.trim();
+    const valor = parseFloat(raw.replace(',', '.'));
+    if (!raw || isNaN(valor) || valor <= 0) {
+      alert('Digite um valor válido');
+      return;
     }
 
-    function adicionarGasto() {
-      const input = document.getElementById('valor');
-      const valor = parseFloat(input.value);
-      if (isNaN(valor)) return alert('Insira um valor válido');
-
-      const data = getDataHoje();
-      const id = Date.now();
-
-      db.ref('gastos/' + data + '/' + id).set({ valor }).then(() => {
-        input.value = '';
-      }).catch(err => {
-        alert("Erro ao salvar no Firebase:\n" + err.message);
-        console.error(err);
-      });
+    const data = getDataHoje();
+    const id = Date.now();
+    try {
+      await db.ref(`gastos/${data}/${id}`).set({ valor });
+      input.value = '';
+      console.log('Gasto salvo:', data, valor);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar no Firebase');
     }
+  }
 
-    function atualizarGasto(data, id, novoValor) {
-      db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor) });
+  function editarGasto(data, id, valorAtual) {
+    const novo = prompt("Editar valor:", valorAtual);
+    if (novo !== null && !isNaN(novo)) {
+      db.ref(`gastos/${data}/${id}`).update({ valor: parseFloat(novo) });
     }
+  }
 
-    function excluirGasto(data, id) {
-      db.ref('gastos/' + data + '/' + id).remove();
-    }
+  function excluirGasto(data, id) {
+    db.ref(`gastos/${data}/${id}`).remove();
+  }
 
-    function editarGasto(data, id, valorAtual) {
-      const novoValor = prompt("Editar valor:", valorAtual);
-      if (novoValor !== null && !isNaN(novoValor)) {
-        atualizarGasto(data, id, novoValor);
-      }
-    }
+  const htmlHistorico = document.getElementById('historico');
+  const ctx = document.getElementById('grafico').getContext('2d');
+  let grafico = null;
 
-    const historicoEl = document.getElementById('historico');
-    const ctx = document.getElementById('grafico').getContext('2d');
-    let grafico;
+  db.ref('gastos').on('value', snapshot => {
+    const dados = snapshot.val() || {};
+    htmlHistorico.innerHTML = '';
+    const dias = Object.keys(dados).sort();
+    const labels = [], valores = [];
 
-    db.ref('gastos').on('value', snapshot => {
-      const dados = snapshot.val() || {};
-      historicoEl.innerHTML = '';
-      const labels = [], valores = [];
+    dias.forEach(data => {
+      const gastos = dados[data];
+      const soma = Object.values(gastos).reduce((a, e) => a + e.valor, 0);
+      labels.push(data);
+      valores.push(soma);
 
-      Object.keys(dados).sort().forEach(data => {
-        const gastos = dados[data];
-        const total = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
-        labels.push(data);
-        valores.push(total);
+      const diaDiv = document.createElement('div');
+      diaDiv.innerHTML = `<h3>${data}</h3>`;
+      diaDiv.className = 'dia';
 
-        const diaDiv = document.createElement('div');
-        diaDiv.className = 'dia';
-        diaDiv.innerHTML = `<h3>${data}</h3>`;
-
-        Object.entries(gastos).forEach(([id, gasto]) => {
-          const div = document.createElement('div');
-          div.className = 'gasto';
-          div.innerHTML = `
-            <span>R$ ${gasto.valor.toFixed(2)}</span>
-            <div>
-              <button onclick="editarGasto('${data}','${id}', ${gasto.valor})">✏️</button>
-              <button onclick="excluirGasto('${data}','${id}')">🗑️</button>
-            </div>`;
-          diaDiv.appendChild(div);
-        });
-
-        historicoEl.appendChild(diaDiv);
+      Object.entries(gastos).forEach(([id, g]) => {
+        const div = document.createElement('div');
+        div.className = 'gasto';
+        div.innerHTML = `
+          <span>R$ ${g.valor.toFixed(2).replace('.', ',')}</span>
+          <div>
+            <button onclick="editarGasto('${data}','${id}',${g.valor})">✏️</button>
+            <button onclick="excluirGasto('${data}','${id}')">🗑️</button>
+          </div>`;
+        diaDiv.appendChild(div);
       });
 
-      if (grafico) grafico.destroy();
-      grafico = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Total por dia',
-            backgroundColor: '#00ffc3',
-            data: valores
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
+      htmlHistorico.appendChild(diaDiv);
     });
-  </script>
+
+    if (grafico) grafico.destroy();
+    grafico = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: valores, backgroundColor: '#00ffc3' }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  });
+</script>
 </body>
 </html>
