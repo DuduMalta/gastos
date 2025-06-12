@@ -1,84 +1,51 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #0d0d0d;
-      color: #e0e0e0;
+      margin: 0; font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f; color: #e0e0e0;
     }
     .container {
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
+      max-width: 600px; margin: auto; padding: 20px;
     }
     h1 {
-      text-align: center;
-      color: #00ffc3;
+      text-align: center; color: #00ffc3;
     }
     input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      width: 100%; padding: 10px; margin: 5px 0;
+      border: none; border-radius: 10px;
     }
     input {
-      background: #1f1f1f;
-      color: white;
+      background: #1e1e1e; color: white;
     }
     button {
-      background: #00ffc3;
-      color: black;
-      font-weight: bold;
-      cursor: pointer;
+      background: #00ffc3; color: #000; font-weight: bold;
+      transition: background 0.3s;
     }
-    .gasto {
-      background: #1a1a1a;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .gasto-buttons button {
-      margin-left: 5px;
-      background: transparent;
-      border: none;
-      color: #00ffc3;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    .dia {
-      margin-top: 20px;
-      border-top: 1px solid #333;
-      padding-top: 10px;
-    }
-    canvas {
-      background: #1f1f1f;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
+    button:hover { background: #00cfa8; }
+    .gasto { background: #1a1a1a; margin: 5px 0; padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .dia { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
+    canvas { background: #1e1e1e; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Controle de Gastos</h1>
-    <input id="valor" type="number" placeholder="Ex: 50" />
+    <input id="valor" type="number" placeholder="Valor (ex: 50)" />
     <button onclick="adicionarGasto()">Salvar Gasto</button>
     <div id="historico"></div>
     <canvas id="grafico" height="150"></canvas>
   </div>
 
   <script>
+    // Firebase config (substitua com o seu se necessário)
     const firebaseConfig = {
       apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
       authDomain: "financia-dudu.firebaseapp.com",
@@ -88,7 +55,8 @@
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
-    firebase.initializeApp(firebaseConfig);
+
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     function getDataHoje() {
@@ -96,39 +64,35 @@
       return d.toISOString().split('T')[0];
     }
 
-    async function adicionarGasto() {
+    function adicionarGasto() {
       const input = document.getElementById('valor');
-      const raw = input.value.trim();
-      const valor = parseFloat(raw.replace(',', '.'));
-
-      if (!raw || isNaN(valor) || valor <= 0) {
-        alert('Digite um valor válido');
-        return;
-      }
+      const valor = parseFloat(input.value);
+      if (isNaN(valor)) return alert('Insira um valor válido');
 
       const data = getDataHoje();
       const id = Date.now();
 
-      try {
-        await db.ref(`gastos/${data}/${id}`).set({ valor });
+      db.ref('gastos/' + data + '/' + id).set({ valor }).then(() => {
         input.value = '';
-      } catch (err) {
-        alert('Erro ao salvar no Firebase');
+      }).catch(err => {
+        alert("Erro ao salvar no Firebase:\n" + err.message);
         console.error(err);
-      }
+      });
     }
 
     function atualizarGasto(data, id, novoValor) {
-      db.ref(`gastos/${data}/${id}`).update({ valor: parseFloat(novoValor) });
+      db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor) });
     }
 
     function excluirGasto(data, id) {
-      db.ref(`gastos/${data}/${id}`).remove();
+      db.ref('gastos/' + data + '/' + id).remove();
     }
 
     function editarGasto(data, id, valorAtual) {
-      const novo = prompt("Editar valor:", valorAtual);
-      if (novo && !isNaN(novo)) atualizarGasto(data, id, parseFloat(novo));
+      const novoValor = prompt("Editar valor:", valorAtual);
+      if (novoValor !== null && !isNaN(novoValor)) {
+        atualizarGasto(data, id, novoValor);
+      }
     }
 
     const historicoEl = document.getElementById('historico');
@@ -154,12 +118,11 @@
           const div = document.createElement('div');
           div.className = 'gasto';
           div.innerHTML = `
-            <span>R$ ${gasto.valor.toFixed(2).replace('.', ',')}</span>
-            <div class="gasto-buttons">
-              <button onclick="editarGasto('${data}', '${id}', ${gasto.valor})">✏️</button>
-              <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
-            </div>
-          `;
+            <span>R$ ${gasto.valor.toFixed(2)}</span>
+            <div>
+              <button onclick="editarGasto('${data}','${id}', ${gasto.valor})">✏️</button>
+              <button onclick="excluirGasto('${data}','${id}')">🗑️</button>
+            </div>`;
           diaDiv.appendChild(div);
         });
 
@@ -170,26 +133,16 @@
       grafico = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels,
+          labels: labels,
           datasets: [{
-            label: 'Total por dia (R$)',
-            data: valores,
-            backgroundColor: '#00ffc3'
+            label: 'Total por dia',
+            backgroundColor: '#00ffc3',
+            data: valores
           }]
         },
         options: {
           plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { color: '#fff' },
-              grid: { color: '#333' }
-            },
-            x: {
-              ticks: { color: '#fff' },
-              grid: { color: '#333' }
-            }
-          }
+          scales: { y: { beginAtZero: true } }
         }
       });
     });
