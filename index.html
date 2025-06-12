@@ -11,293 +11,14 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #4361ee;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --danger: #f72585;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --white: #ffffff;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f0f2f5;
-            color: var(--dark);
-            line-height: 1.6;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: var(--white);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            padding: 0;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-            padding: 25px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .month-header {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            padding: 25px;
-        }
-        
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .input-group > * {
-            flex: 1;
-            min-width: 120px;
-        }
-        
-        input, select {
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
-        }
-        
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            color: var(--white);
-        }
-        
-        .btn-primary:hover {
-            background-color: #3a56d4;
-        }
-        
-        .btn-success {
-            background-color: var(--success);
-            color: var(--white);
-        }
-        
-        .btn-success:hover {
-            background-color: #3ab5d9;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger);
-            color: var(--white);
-        }
-        
-        .btn-danger:hover {
-            background-color: #e5177a;
-        }
-        
-        .btn-warning {
-            background-color: #ffc107;
-            color: var(--dark);
-        }
-        
-        .btn-warning:hover {
-            background-color: #e0a800;
-        }
-        
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.8rem;
-        }
-        
-        .total-display {
-            background-color: var(--light);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: var(--white);
-        }
-        
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        th {
-            background-color: #f8f9fa;
-            font-weight: 500;
-            color: var(--gray);
-            text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-        
-        tr:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .actions {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .chart-container {
-            margin-top: 30px;
-            background-color: var(--white);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
-            border-radius: 50%;
-            border-top-color: var(--white);
-            animation: spin 1s ease-in-out infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 600px) {
-            .input-group {
-                flex-direction: column;
-            }
-            
-            .input-group > * {
-                width: 100%;
-            }
-            
-            .main-content {
-                padding: 15px;
-            }
-        }
+        /* (Manter os estilos anteriores) */
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Controle de Gastos Mensal</h1>
-            <div class="month-header" id="currentMonth"></div>
-        </header>
-        
-        <div class="main-content">
-            <div class="input-group">
-                <input type="number" id="valor" placeholder="Valor (R$)" step="0.01" required>
-                <select id="categoria">
-                    <option value="Alimentação">Alimentação</option>
-                    <option value="Compras Online">Compras Online</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Outros">Outros</option>
-                </select>
-                <button onclick="adicionarGasto()" class="btn-primary">
-                    <span id="addIcon">+</span> Adicionar
-                </button>
-            </div>
-
-            <div class="total-display">
-                Total do Mês: <span id="totalMes">R$ 0,00</span>
-            </div>
-
-            <div class="input-group">
-                <button onclick="exportarEResetar()" class="btn-success">
-                    <span id="exportIcon">📊</span> Exportar e Resetar
-                </button>
-            </div>
-
-            <div class="table-container">
-                <table id="tabelaGastos">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Categoria</th>
-                            <th>Valor</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="listaGastos"></tbody>
-                </table>
-            </div>
-
-            <div class="chart-container">
-                <canvas id="graficoGastos"></canvas>
-            </div>
-        </div>
-    </div>
+    <!-- (Manter a estrutura HTML anterior) -->
 
     <script>
-        // Configuração do Firebase (substitua pelos seus dados)
+        // Configuração do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyB_8NDa0J4LqFiyAlqgkOuJbwVxI9X2X2E",
             authDomain: "controle-gastos-5d942.firebaseapp.com",
@@ -315,6 +36,7 @@
         let mesAtual = new Date().toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
         let gastosLocais = [];
         let editandoGasto = null;
+        let listenerGastos = null;
 
         // Atualiza o cabeçalho com o mês atual
         function atualizarMesAtual() {
@@ -329,18 +51,10 @@
             const valor = parseFloat(valorInput.value);
             const categoria = categoriaSelect.value;
             
-            if (isNaN(valor)) {
-                alert('Digite um valor válido!');
+            if (isNaN(valor) || valor <= 0) {
+                alert('Digite um valor válido maior que zero!');
                 return;
             }
-
-            const data = new Date().toLocaleString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
 
             // Botão de loading
             const addIcon = document.getElementById('addIcon');
@@ -348,10 +62,18 @@
             
             if (editandoGasto) {
                 // Atualiza um gasto existente
+                const dataAtual = new Date().toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
                 const gastoAtualizado = {
                     valor: valor,
                     categoria: categoria,
-                    data: editandoGasto.data, // Mantém a data original
+                    data: dataAtual, // Atualiza a data para a data da edição
                     mes: mesAtual
                 };
 
@@ -363,19 +85,25 @@
 
                 // Atualiza no Firebase (se não for um item temporário)
                 if (!editandoGasto.key.startsWith('temp-')) {
-                    database.ref('gastos/' + editandoGasto.key).update({
-                        valor: valor,
-                        categoria: categoria
-                    }).catch(error => {
-                        console.error("Erro ao atualizar no Firebase:", error);
-                        alert('Erro ao atualizar o gasto. Verifique sua conexão.');
-                    });
+                    database.ref('gastos/' + editandoGasto.key).update(gastoAtualizado)
+                        .catch(error => {
+                            console.error("Erro ao atualizar no Firebase:", error);
+                            alert('Erro ao atualizar o gasto. Verifique sua conexão.');
+                        });
                 }
 
                 editandoGasto = null;
-                document.querySelector('button.btn-primary').textContent = '+ Adicionar';
+                document.querySelector('button.btn-primary').innerHTML = '<span id="addIcon">+</span> Adicionar';
             } else {
                 // Cria objeto do novo gasto
+                const data = new Date().toLocaleString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
                 const novoGasto = {
                     valor: valor,
                     categoria: categoria,
@@ -398,6 +126,7 @@
                     const index = gastosLocais.findIndex(g => g.key === novoGasto.key);
                     if (index !== -1) {
                         gastosLocais[index].key = snapshot.key;
+                        atualizarInterface();
                     }
                 }).catch(error => {
                     console.error("Erro ao salvar no Firebase:", error);
@@ -438,14 +167,17 @@
                 editandoGasto = gasto;
                 document.getElementById('valor').value = gasto.valor;
                 document.getElementById('categoria').value = gasto.categoria;
-                document.querySelector('button.btn-primary').textContent = '✓ Atualizar';
+                
+                const btnAdicionar = document.querySelector('button.btn-primary');
+                btnAdicionar.innerHTML = '<span id="addIcon">✓</span> Atualizar';
+                
                 document.getElementById('valor').focus();
             }
         }
 
         // Exporta para Excel e reseta o mês
         function exportarEResetar() {
-            if (gastosLocais.length === 0) {
+            if (gastosLocais.filter(g => g.mes === mesAtual).length === 0) {
                 alert('Nenhum gasto para exportar este mês!');
                 return;
             }
@@ -461,189 +193,7 @@
             }
         }
 
-        // Exporta para Excel
-        function exportToExcel() {
-            return new Promise((resolve) => {
-                const gastosDoMes = gastosLocais.filter(gasto => gasto.mes === mesAtual);
-                let total = 0;
-                
-                // Organiza os dados para o Excel
-                const dadosExcel = gastosDoMes.map(gasto => {
-                    total += gasto.valor;
-                    return {
-                        'Data': gasto.data,
-                        'Categoria': gasto.categoria,
-                        'Valor (R$)': gasto.valor
-                    };
-                });
-
-                // Adiciona o total
-                dadosExcel.push({
-                    'Data': 'TOTAL',
-                    'Categoria': '',
-                    'Valor (R$)': total
-                });
-
-                // Cria a planilha
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(dadosExcel);
-                
-                // Formatação automática
-                ws['!cols'] = [
-                    { width: 20 }, // Data
-                    { width: 20 }, // Categoria
-                    { width: 15 }  // Valor
-                ];
-
-                // Formata cabeçalho
-                const headerStyle = { 
-                    font: { bold: true, color: { rgb: "FFFFFF" } },
-                    fill: { fgColor: { rgb: "4361EE" } }
-                };
-                
-                for (let key in dadosExcel[0]) {
-                    const cell = XLSX.utils.encode_cell({ c: Object.keys(dadosExcel[0]).indexOf(key), r: 0 });
-                    if (!ws[cell]) ws[cell] = {};
-                    ws[cell].s = headerStyle;
-                }
-
-                // Formata a linha do total
-                const totalRow = dadosExcel.length - 1;
-                const totalCell = XLSX.utils.encode_cell({ c: 2, r: totalRow });
-                if (!ws[totalCell]) ws[totalCell] = {};
-                ws[totalCell].s = { font: { bold: true, color: { rgb: "FF0000" } } };
-
-                XLSX.utils.book_append_sheet(wb, ws, "Gastos");
-                
-                // Gera e faz download do arquivo
-                XLSX.writeFile(wb, `Gastos_${mesAtual.replace(' ', '_')}.xlsx`);
-                resolve();
-            });
-        }
-
-        // Reseta para um novo mês
-        function resetarMes() {
-            // Atualiza para o novo mês
-            const now = new Date();
-            mesAtual = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-            atualizarMesAtual();
-            
-            // Filtra apenas gastos do novo mês
-            gastosLocais = gastosLocais.filter(gasto => gasto.mes === mesAtual);
-            
-            // Atualiza a interface
-            atualizarInterface();
-        }
-
-        // Atualiza o gráfico
-        function atualizarGrafico(dados) {
-            const ctx = document.getElementById('graficoGastos').getContext('2d');
-            
-            if (grafico) {
-                grafico.destroy();
-            }
-
-            // Se não houver dados, mostra um gráfico vazio
-            if (Object.keys(dados).length === 0) {
-                grafico = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Sem dados'],
-                        datasets: [{
-                            data: [1],
-                            backgroundColor: ['#e9ecef'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: `Distribuição por Categoria - ${mesAtual}`,
-                                font: {
-                                    size: 16,
-                                    weight: '500'
-                                },
-                                padding: {
-                                    top: 10,
-                                    bottom: 20
-                                }
-                            },
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                enabled: false
-                            }
-                        },
-                        cutout: '65%'
-                    }
-                });
-                return;
-            }
-
-            grafico = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(dados),
-                    datasets: [{
-                        data: Object.values(dados),
-                        backgroundColor: [
-                            '#4361ee',
-                            '#4cc9f0',
-                            '#7209b7',
-                            '#f72585',
-                            '#4895ef'
-                        ],
-                        borderWidth: 0,
-                        hoverOffset: 10
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `Distribuição por Categoria - ${mesAtual}`,
-                            font: {
-                                size: 16,
-                                weight: '500'
-                            },
-                            padding: {
-                                top: 10,
-                                bottom: 20
-                            }
-                        },
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 20,
-                                font: {
-                                    size: 12
-                                },
-                                usePointStyle: true
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = context.raw || 0;
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: R$ ${value.toFixed(2)} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    },
-                    cutout: '65%'
-                }
-            });
-        }
+        // (Manter as funções exportToExcel, resetarMes, atualizarGrafico como antes)
 
         // Atualiza toda a interface
         function atualizarInterface() {
@@ -678,20 +228,22 @@
             document.getElementById('totalMes').textContent = `R$ ${total.toFixed(2)}`;
             
             // Atualiza o gráfico
-            if (gastosDoMes.length > 0) {
-                const porCategoria = gastosDoMes.reduce((acc, gasto) => {
-                    acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
-                    return acc;
-                }, {});
-                atualizarGrafico(porCategoria);
-            } else {
-                atualizarGrafico({});
-            }
+            const porCategoria = gastosDoMes.reduce((acc, gasto) => {
+                acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
+                return acc;
+            }, {});
+            atualizarGrafico(porCategoria);
         }
 
         // Carrega os gastos do Firebase
         function carregarGastos() {
-            database.ref('gastos').orderByChild('mes').equalTo(mesAtual).once('value', (snapshot) => {
+            // Remove listener anterior se existir
+            if (listenerGastos) {
+                listenerGastos();
+            }
+            
+            // Carrega todos os gastos (não apenas do mês atual)
+            listenerGastos = database.ref('gastos').on('value', (snapshot) => {
                 gastosLocais = [];
                 
                 snapshot.forEach((childSnapshot) => {
@@ -708,6 +260,13 @@
         window.onload = function() {
             atualizarMesAtual();
             carregarGastos();
+        };
+
+        // Limpa o listener quando a página é fechada
+        window.onbeforeunload = function() {
+            if (listenerGastos) {
+                listenerGastos();
+            }
         };
     </script>
 </body>
