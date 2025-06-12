@@ -9,42 +9,62 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0; font-family: 'Segoe UI', sans-serif;
-      background: #0a0a0a; color: #e0e0e0;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d0d0d;
+      color: #e0e0e0;
     }
     .container {
-      max-width: 600px; margin: auto; padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
     }
     h1 {
-      text-align: center; color: #00ffc3;
+      text-align: center;
+      color: #00ffc3;
     }
     input, button {
-      width: 100%; padding: 12px; margin: 10px 0;
-      border: none; border-radius: 10px; font-size: 16px;
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
     }
     input {
-      background: #1f1f1f; color: white;
+      background: #1f1f1f;
+      color: white;
     }
     button {
-      background: #00ffc3; color: black;
-      font-weight: bold; cursor: pointer;
+      background: #00ffc3;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
     }
     .gasto {
-      background: #1a1a1a; padding: 10px;
-      margin: 5px 0; border-radius: 10px;
-      display: flex; justify-content: space-between;
+      background: #1a1a1a;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
     }
     .gasto-buttons button {
-      margin-left: 5px; background: transparent;
-      border: none; color: #00ffc3; font-size: 18px;
+      margin-left: 5px;
+      background: transparent;
+      border: none;
+      color: #00ffc3;
+      font-size: 18px;
       cursor: pointer;
     }
     .dia {
-      margin-top: 20px; border-top: 1px solid #333;
+      margin-top: 20px;
+      border-top: 1px solid #333;
       padding-top: 10px;
     }
     canvas {
-      background: #1f1f1f; border-radius: 10px;
+      background: #1f1f1f;
+      border-radius: 10px;
       margin-top: 20px;
     }
   </style>
@@ -53,13 +73,12 @@
   <div class="container">
     <h1>Controle de Gastos</h1>
     <input id="valor" type="number" placeholder="Ex: 50" />
-    <button id="btnSalvar">Salvar Gasto</button>
+    <button onclick="adicionarGasto()">Salvar Gasto</button>
     <div id="historico"></div>
     <canvas id="grafico" height="150"></canvas>
   </div>
 
   <script>
-    // Inicialização do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
       authDomain: "financia-dudu.firebaseapp.com",
@@ -72,22 +91,32 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Função para salvar gasto
-    document.getElementById('btnSalvar').addEventListener('click', async () => {
+    function getDataHoje() {
+      const d = new Date();
+      return d.toISOString().split('T')[0];
+    }
+
+    async function adicionarGasto() {
       const input = document.getElementById('valor');
-      let valor = parseFloat(input.value.replace(',', '.'));
-      if (isNaN(valor) || valor <= 0) return alert("Digite um valor válido.");
-      const data = new Date().toISOString().split('T')[0];
+      const raw = input.value.trim();
+      const valor = parseFloat(raw.replace(',', '.'));
+
+      if (!raw || isNaN(valor) || valor <= 0) {
+        alert('Digite um valor válido');
+        return;
+      }
+
+      const data = getDataHoje();
       const id = Date.now();
 
       try {
         await db.ref(`gastos/${data}/${id}`).set({ valor });
         input.value = '';
       } catch (err) {
-        console.error("Erro ao salvar gasto:", err);
-        alert("Erro ao salvar. Verifique sua conexão ou as regras do Firebase.");
+        alert('Erro ao salvar no Firebase');
+        console.error(err);
       }
-    });
+    }
 
     function atualizarGasto(data, id, novoValor) {
       db.ref(`gastos/${data}/${id}`).update({ valor: parseFloat(novoValor) });
@@ -106,7 +135,6 @@
     const ctx = document.getElementById('grafico').getContext('2d');
     let grafico;
 
-    // Atualização em tempo real
     db.ref('gastos').on('value', snapshot => {
       const dados = snapshot.val() || {};
       historicoEl.innerHTML = '';
@@ -114,21 +142,21 @@
 
       Object.keys(dados).sort().forEach(data => {
         const gastos = dados[data];
-        const totalDia = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
+        const total = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
         labels.push(data);
-        valores.push(totalDia);
+        valores.push(total);
 
         const diaDiv = document.createElement('div');
         diaDiv.className = 'dia';
         diaDiv.innerHTML = `<h3>${data}</h3>`;
 
-        Object.entries(gastos).forEach(([id, g]) => {
+        Object.entries(gastos).forEach(([id, gasto]) => {
           const div = document.createElement('div');
           div.className = 'gasto';
           div.innerHTML = `
-            <span>R$ ${g.valor.toFixed(2).replace('.', ',')}</span>
+            <span>R$ ${gasto.valor.toFixed(2).replace('.', ',')}</span>
             <div class="gasto-buttons">
-              <button onclick="editarGasto('${data}', '${id}', ${g.valor})">✏️</button>
+              <button onclick="editarGasto('${data}', '${id}', ${gasto.valor})">✏️</button>
               <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
             </div>
           `;
