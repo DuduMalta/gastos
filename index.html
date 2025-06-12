@@ -9,68 +9,42 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
+      margin: 0; font-family: 'Segoe UI', sans-serif;
+      background: #0a0a0a; color: #e0e0e0;
     }
     .container {
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
+      max-width: 600px; margin: auto; padding: 20px;
     }
     h1 {
-      text-align: center;
-      color: #00ffc3;
-      margin-bottom: 20px;
+      text-align: center; color: #00ffc3;
     }
     input, button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      width: 100%; padding: 12px; margin: 10px 0;
+      border: none; border-radius: 10px; font-size: 16px;
     }
     input {
-      background: #1f1f1f;
-      color: white;
+      background: #1f1f1f; color: white;
     }
     button {
-      background: #00ffc3;
-      color: black;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #00cfa8;
+      background: #00ffc3; color: black;
+      font-weight: bold; cursor: pointer;
     }
     .gasto {
-      background: #1a1a1a;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .dia {
-      margin-top: 20px;
-      border-top: 1px solid #333;
-      padding-top: 10px;
+      background: #1a1a1a; padding: 10px;
+      margin: 5px 0; border-radius: 10px;
+      display: flex; justify-content: space-between;
     }
     .gasto-buttons button {
-      margin-left: 5px;
-      background: transparent;
-      border: none;
+      margin-left: 5px; background: transparent;
+      border: none; color: #00ffc3; font-size: 18px;
       cursor: pointer;
-      color: #00ffc3;
-      font-size: 18px;
+    }
+    .dia {
+      margin-top: 20px; border-top: 1px solid #333;
+      padding-top: 10px;
     }
     canvas {
-      background: #1f1f1f;
-      border-radius: 10px;
+      background: #1f1f1f; border-radius: 10px;
       margin-top: 20px;
     }
   </style>
@@ -78,13 +52,14 @@
 <body>
   <div class="container">
     <h1>Controle de Gastos</h1>
-    <input id="valor" type="number" placeholder="Valor do gasto (ex: 50.00)" />
+    <input id="valor" type="number" placeholder="Ex: 50" />
     <button id="btnSalvar">Salvar Gasto</button>
     <div id="historico"></div>
     <canvas id="grafico" height="150"></canvas>
   </div>
 
   <script>
+    // Inicialização do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
       authDomain: "financia-dudu.firebaseapp.com",
@@ -94,25 +69,23 @@
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
-
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const btn = document.getElementById('btnSalvar');
-    btn.addEventListener('click', async () => {
-      const valorInput = document.getElementById('valor');
-      const valor = parseFloat(valorInput.value);
-      if (isNaN(valor)) return;
-
+    // Função para salvar gasto
+    document.getElementById('btnSalvar').addEventListener('click', async () => {
+      const input = document.getElementById('valor');
+      let valor = parseFloat(input.value.replace(',', '.'));
+      if (isNaN(valor) || valor <= 0) return alert("Digite um valor válido.");
       const data = new Date().toISOString().split('T')[0];
       const id = Date.now();
 
       try {
         await db.ref(`gastos/${data}/${id}`).set({ valor });
-        valorInput.value = '';
-      } catch (error) {
-        console.error("Erro ao salvar gasto:", error);
-        alert("Erro ao salvar gasto. Verifique as permissões no Firebase.");
+        input.value = '';
+      } catch (err) {
+        console.error("Erro ao salvar gasto:", err);
+        alert("Erro ao salvar. Verifique sua conexão ou as regras do Firebase.");
       }
     });
 
@@ -125,16 +98,15 @@
     }
 
     function editarGasto(data, id, valorAtual) {
-      const novoValor = prompt("Editar valor:", valorAtual);
-      if (novoValor && !isNaN(novoValor)) {
-        atualizarGasto(data, id, novoValor);
-      }
+      const novo = prompt("Editar valor:", valorAtual);
+      if (novo && !isNaN(novo)) atualizarGasto(data, id, parseFloat(novo));
     }
 
     const historicoEl = document.getElementById('historico');
     const ctx = document.getElementById('grafico').getContext('2d');
     let grafico;
 
+    // Atualização em tempo real
     db.ref('gastos').on('value', snapshot => {
       const dados = snapshot.val() || {};
       historicoEl.innerHTML = '';
@@ -154,7 +126,7 @@
           const div = document.createElement('div');
           div.className = 'gasto';
           div.innerHTML = `
-            <span>R$ ${g.valor.toFixed(2)}</span>
+            <span>R$ ${g.valor.toFixed(2).replace('.', ',')}</span>
             <div class="gasto-buttons">
               <button onclick="editarGasto('${data}', '${id}', ${g.valor})">✏️</button>
               <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
