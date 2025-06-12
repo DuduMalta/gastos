@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Controle de Gastos</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
@@ -11,7 +11,7 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+      background: #0a0a0a;
       color: #e0e0e0;
     }
     .container {
@@ -22,59 +22,64 @@
     h1 {
       text-align: center;
       color: #00ffc3;
+      margin-bottom: 20px;
     }
     input, button {
       width: 100%;
       padding: 12px;
       margin: 8px 0;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       font-size: 16px;
     }
     input {
-      background: #1e1e1e;
-      color: #fff;
+      background: #1f1f1f;
+      color: white;
     }
     button {
       background: #00ffc3;
-      color: #000;
+      color: black;
       font-weight: bold;
       cursor: pointer;
-      transition: 0.3s;
+      transition: background 0.2s;
     }
     button:hover {
       background: #00cfa8;
     }
     .gasto {
-      background: #262626;
+      background: #1a1a1a;
       padding: 10px;
-      border-radius: 10px;
       margin: 5px 0;
+      border-radius: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .dia {
       margin-top: 20px;
-      padding-top: 10px;
       border-top: 1px solid #333;
+      padding-top: 10px;
+    }
+    .gasto-buttons button {
+      margin-left: 5px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #00ffc3;
+      font-size: 18px;
     }
     canvas {
-      background: #1e1e1e;
+      background: #1f1f1f;
       border-radius: 10px;
-      margin-top: 30px;
-    }
-    .botoes {
-      display: flex;
-      gap: 5px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Controle de Gastos</h1>
-    <input id="valor" type="number" placeholder="Valor do gasto" />
-    <button onclick="adicionarGasto()">Salvar Gasto</button>
+    <input id="valor" type="number" placeholder="Valor do gasto (ex: 50.00)" />
+    <button id="btnSalvar">Salvar Gasto</button>
     <div id="historico"></div>
     <canvas id="grafico" height="150"></canvas>
   </div>
@@ -89,22 +94,21 @@
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const getDataHoje = () => new Date().toISOString().split('T')[0];
-
-    function adicionarGasto() {
+    const btn = document.getElementById('btnSalvar');
+    btn.addEventListener('click', () => {
       const valorInput = document.getElementById('valor');
       const valor = parseFloat(valorInput.value);
-      if (isNaN(valor)) return;
-
-      const data = getDataHoje();
-      const id = Date.now();
-      db.ref(`gastos/${data}/${id}`).set({ valor })
-        .then(() => valorInput.value = '');
-    }
+      if (!isNaN(valor)) {
+        const data = new Date().toISOString().split('T')[0];
+        const id = Date.now();
+        db.ref(`gastos/${data}/${id}`).set({ valor }).then(() => {
+          valorInput.value = '';
+        });
+      }
+    });
 
     function atualizarGasto(data, id, novoValor) {
       db.ref(`gastos/${data}/${id}`).update({ valor: parseFloat(novoValor) });
@@ -116,7 +120,7 @@
 
     function editarGasto(data, id, valorAtual) {
       const novoValor = prompt("Editar valor:", valorAtual);
-      if (novoValor !== null && !isNaN(novoValor)) {
+      if (novoValor && !isNaN(novoValor)) {
         atualizarGasto(data, id, novoValor);
       }
     }
@@ -140,13 +144,13 @@
         diaDiv.className = 'dia';
         diaDiv.innerHTML = `<h3>${data}</h3>`;
 
-        Object.entries(gastos).forEach(([id, gasto]) => {
+        Object.entries(gastos).forEach(([id, g]) => {
           const div = document.createElement('div');
           div.className = 'gasto';
           div.innerHTML = `
-            <span>R$ ${gasto.valor.toFixed(2)}</span>
-            <div class="botoes">
-              <button onclick="editarGasto('${data}', '${id}', ${gasto.valor})">✏️</button>
+            <span>R$ ${g.valor.toFixed(2)}</span>
+            <div class="gasto-buttons">
+              <button onclick="editarGasto('${data}', '${id}', ${g.valor})">✏️</button>
               <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
             </div>
           `;
@@ -163,15 +167,22 @@
           labels,
           datasets: [{
             label: 'Total por dia (R$)',
-            backgroundColor: '#00ffc3',
-            data: valores
+            data: valores,
+            backgroundColor: '#00ffc3'
           }]
         },
         options: {
           plugins: { legend: { display: false } },
           scales: {
-            y: { beginAtZero: true },
-            x: { ticks: { color: '#fff' } }
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#fff' },
+              grid: { color: '#333' }
+            },
+            x: {
+              ticks: { color: '#fff' },
+              grid: { color: '#333' }
+            }
           }
         }
       });
