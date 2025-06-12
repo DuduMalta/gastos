@@ -3,20 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Gastos</title>
+    <title>Controle de Gastos Avançado</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        input, button { padding: 8px; margin: 5px 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .btn-export {
+            background-color: #27ae60;
+        }
+        .btn-export:hover {
+            background-color: #219653;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .chart-container {
+            margin-top: 30px;
+            position: relative;
+            height: 300px;
+        }
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>Controle de Gastos</h1>
-    <input type="text" id="descricao" placeholder="Descrição">
-    <input type="number" id="valor" placeholder="Valor">
-    <button onclick="adicionarGasto()">Adicionar</button>
-    <ul id="listaGastos"></ul>
+    <div class="container">
+        <h1>Controle de Gastos Avançado</h1>
+        
+        <div class="input-group">
+            <input type="text" id="descricao" placeholder="Descrição" required>
+            <input type="number" id="valor" placeholder="Valor" step="0.01" required>
+            <select id="categoria">
+                <option value="Alimentação">Alimentação</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Moradia">Moradia</option>
+                <option value="Lazer">Lazer</option>
+                <option value="Outros">Outros</option>
+            </select>
+            <button onclick="adicionarGasto()">Adicionar</button>
+        </div>
+
+        <div class="input-group">
+            <button onclick="exportToExcel()" class="btn-export">Exportar para Excel</button>
+            <button onclick="gerarRelatorio()" class="btn-export">Gerar Relatório</button>
+        </div>
+
+        <table id="tabelaGastos">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Categoria</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="listaGastos"></tbody>
+        </table>
+
+        <div class="chart-container">
+            <canvas id="graficoGastos"></canvas>
+        </div>
+    </div>
 
     <script>
         // Configuração do Firebase (substitua pelos seus dados)
@@ -33,33 +138,176 @@
         // Inicializa o Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        let grafico;
 
         function adicionarGasto() {
             const descricao = document.getElementById('descricao').value;
-            const valor = document.getElementById('valor').value;
+            const valor = parseFloat(document.getElementById('valor').value);
+            const categoria = document.getElementById('categoria').value;
+            const data = new Date().toLocaleString('pt-BR');
             
+            if (!descricao || isNaN(valor)) {
+                alert('Preencha todos os campos corretamente!');
+                return;
+            }
+
             database.ref('gastos').push({
                 descricao: descricao,
                 valor: valor,
-                data: new Date().toISOString()
+                categoria: categoria,
+                data: data
             });
             
             document.getElementById('descricao').value = '';
             document.getElementById('valor').value = '';
         }
 
+        function removerGasto(key) {
+            if (confirm('Tem certeza que deseja remover este gasto?')) {
+                database.ref('gastos/' + key).remove();
+            }
+        }
+
+        function exportToExcel() {
+            database.ref('gastos').once('value', (snapshot) => {
+                const gastos = [];
+                snapshot.forEach((childSnapshot) => {
+                    const gasto = childSnapshot.val();
+                    gasto.key = childSnapshot.key;
+                    gastos.push(gasto);
+                });
+
+                // Organiza os dados para o Excel
+                const dadosExcel = gastos.map(gasto => ({
+                    'Data': gasto.data,
+                    'Descrição': gasto.descricao,
+                    'Valor (R$)': gasto.valor,
+                    'Categoria': gasto.categoria
+                }));
+
+                // Cria a planilha
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(dadosExcel);
+                
+                // Formatação automática
+                ws['!cols'] = [
+                    { width: 20 }, // Data
+                    { width: 30 }, // Descrição
+                    { width: 15 }, // Valor
+                    { width: 15 }  // Categoria
+                ];
+
+                // Adiciona cabeçalho em negrito
+                const headerStyle = { font: { bold: true } };
+                for (let key in dadosExcel[0]) {
+                    const cell = XLSX.utils.encode_cell({ c: Object.keys(dadosExcel[0]).indexOf(key), r: 0 });
+                    if (!ws[cell]) ws[cell] = {};
+                    ws[cell].s = headerStyle;
+                }
+
+                XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+                
+                // Gera e faz download do arquivo
+                XLSX.writeFile(wb, `Gastos_${new Date().toLocaleDateString('pt-BR')}.xlsx`);
+            });
+        }
+
+        function gerarRelatorio() {
+            database.ref('gastos').once('value', (snapshot) => {
+                const gastos = [];
+                snapshot.forEach((childSnapshot) => {
+                    gastos.push(childSnapshot.val());
+                });
+
+                // Agrupa por categoria
+                const porCategoria = gastos.reduce((acc, gasto) => {
+                    acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
+                    return acc;
+                }, {});
+
+                // Atualiza o gráfico
+                atualizarGrafico(porCategoria);
+            });
+        }
+
+        function atualizarGrafico(dados) {
+            const ctx = document.getElementById('graficoGastos').getContext('2d');
+            
+            if (grafico) {
+                grafico.destroy();
+            }
+
+            grafico = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(dados),
+                    datasets: [{
+                        data: Object.values(dados),
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#f1c40f',
+                            '#e74c3c',
+                            '#9b59b6'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Gastos por Categoria',
+                            font: {
+                                size: 18
+                            }
+                        },
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
         // Carrega gastos existentes
         database.ref('gastos').on('value', (snapshot) => {
             const lista = document.getElementById('listaGastos');
             lista.innerHTML = '';
+            const gastos = [];
             
             snapshot.forEach((childSnapshot) => {
                 const gasto = childSnapshot.val();
-                const item = document.createElement('li');
-                item.textContent = `${gasto.descricao}: R$ ${gasto.valor}`;
-                lista.appendChild(item);
+                gastos.push(gasto);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${gasto.data}</td>
+                    <td>${gasto.descricao}</td>
+                    <td>R$ ${gasto.valor.toFixed(2)}</td>
+                    <td>${gasto.categoria}</td>
+                    <td class="actions">
+                        <button onclick="removerGasto('${childSnapshot.key}')" class="btn-danger">Remover</button>
+                    </td>
+                `;
+                lista.appendChild(row);
             });
+
+            // Atualiza gráfico automaticamente
+            if (gastos.length > 0) {
+                const porCategoria = gastos.reduce((acc, gasto) => {
+                    acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
+                    return acc;
+                }, {});
+                atualizarGrafico(porCategoria);
+            }
         });
+
+        // Inicializa gráfico vazio
+        window.onload = function() {
+            atualizarGrafico({});
+        };
     </script>
 </body>
 </html>
