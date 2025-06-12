@@ -1,139 +1,163 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
-      background: #0d0d0d; color: #eee;
-      font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px;
-    }
-    .container {
-      max-width: 600px; margin: auto;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 40px;
     }
     h1 {
-      color: #00ffc3; text-align: center;
+      color: #00ffc3;
     }
     input, button {
-      width: 100%; padding: 10px; margin: 5px 0;
-      border-radius: 8px; border: none; font-size: 16px;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
     }
-    input { background: #1e1e1e; color: #fff; }
+    input {
+      width: 200px;
+    }
     button {
-      background: #00ffc3; color: #000; font-weight: bold;
-      cursor: pointer; transition: 0.3s;
+      background-color: #00ffc3;
+      color: black;
+      cursor: pointer;
+      transition: background 0.3s;
     }
-    button:hover { background: #00cfa8; }
-    .gasto {
-      background: #181818; padding: 10px; border-radius: 8px;
-      display: flex; justify-content: space-between; align-items: center;
-      margin: 5px 0;
+    button:hover {
+      background-color: #00cc9f;
     }
-    canvas { background: #1e1e1e; border-radius: 8px; margin-top: 20px; }
-    .dia { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
+    .gasto-card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 10px 0;
+      width: 300px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 10px rgba(0, 255, 195, 0.2);
+    }
+    .botoes button {
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Controle de Gastos</h1>
-    <input id="valor" type="number" placeholder="Valor do gasto (ex: 50)" />
-    <button onclick="adicionarGasto()">Salvar Gasto</button>
-    <div id="historico"></div>
-    <canvas id="grafico" height="120"></canvas>
-  </div>
+  <h1>Controle de Gastos</h1>
+  <input type="text" id="valor" placeholder="Digite o valor (ex: 50)">
+  <button onclick="salvarGasto()">Salvar Gasto</button>
+  <div id="gastos"></div>
 
-  <script>
-    // Firebase Config
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
       authDomain: "financia-dudu.firebaseapp.com",
       databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
       projectId: "financia-dudu",
-      storageBucket: "financia-dudu.firebasestorage.app",
+      storageBucket: "financia-dudu.appspot.com",
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
 
-    // Inicializa Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    const getDataHoje = () => new Date().toISOString().split('T')[0];
-    const historicoEl = document.getElementById("historico");
-    const ctx = document.getElementById("grafico").getContext("2d");
-    let grafico;
+    const hoje = new Date().toISOString().split('T')[0];
+    const gastosRef = ref(db, `gastos/${hoje}`);
 
-    function adicionarGasto() {
+    function formatarReais(valor) {
+      return `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
+    }
+
+    window.salvarGasto = function () {
       const input = document.getElementById("valor");
-      const valor = parseFloat(input.value);
-      if (isNaN(valor)) return alert("Digite um valor válido.");
-      const data = getDataHoje();
-      const id = Date.now();
-      db.ref("gastos/" + data + "/" + id).set({ valor })
-        .then(() => input.value = '')
-        .catch(() => alert("Erro ao salvar no Firebase"));
-    }
-
-    function atualizarGasto(data, id, novoValor) {
-      db.ref("gastos/" + data + "/" + id).update({ valor: parseFloat(novoValor) });
-    }
-
-    function excluirGasto(data, id) {
-      db.ref("gastos/" + data + "/" + id).remove();
-    }
-
-    function editarGasto(data, id, valorAtual) {
-      const novo = prompt("Editar valor:", valorAtual);
-      if (novo !== null && !isNaN(novo)) atualizarGasto(data, id, novo);
-    }
-
-    db.ref("gastos").on("value", snapshot => {
-      const dados = snapshot.val() || {};
-      historicoEl.innerHTML = "";
-      const labels = [], valores = [];
-
-      Object.keys(dados).sort().forEach(data => {
-        const gastos = dados[data];
-        const totalDia = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
-        labels.push(data);
-        valores.push(totalDia);
-
-        const divDia = document.createElement("div");
-        divDia.className = "dia";
-        divDia.innerHTML = `<h3>${data}</h3>`;
-
-        Object.entries(gastos).forEach(([id, gasto]) => {
-          const el = document.createElement("div");
-          el.className = "gasto";
-          el.innerHTML = `
-            <span>R$ ${gasto.valor.toFixed(2)}</span>
-            <span>
-              <button onclick="editarGasto('${data}','${id}',${gasto.valor})">✏️</button>
-              <button onclick="excluirGasto('${data}','${id}')">🗑️</button>
-            </span>`;
-          divDia.appendChild(el);
-        });
-
-        historicoEl.appendChild(divDia);
+      let valor = input.value.replace(/[^0-9,\.]/g, '').replace(',', '.');
+      if (!valor || isNaN(valor)) {
+        Swal.fire("Erro", "Digite um valor válido.", "error");
+        return;
+      }
+      valor = parseFloat(valor).toFixed(2);
+      push(gastosRef, { valor }).then(() => {
+        Swal.fire("Sucesso", "Gasto salvo com sucesso!", "success");
+        input.value = "";
+      }).catch(() => {
+        Swal.fire("Erro", "Erro ao salvar no Firebase.", "error");
       });
+    }
 
-      if (grafico) grafico.destroy();
-      grafico = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{ data: valores, backgroundColor: "#00ffc3", label: "Gastos por Dia" }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
+    function carregarGastos() {
+      onValue(gastosRef, (snapshot) => {
+        const container = document.getElementById("gastos");
+        container.innerHTML = "";
+        snapshot.forEach((child) => {
+          const id = child.key;
+          const { valor } = child.val();
+
+          const div = document.createElement("div");
+          div.className = "gasto-card";
+          div.innerHTML = `
+            <span>${formatarReais(valor)}</span>
+            <div class="botoes">
+              <button onclick="editarGasto('${id}', '${valor}')">✏️</button>
+              <button onclick="excluirGasto('${id}')">🗑️</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      });
+    }
+
+    window.editarGasto = function (id, valorAtual) {
+      Swal.fire({
+        title: 'Editar Gasto',
+        input: 'text',
+        inputValue: valorAtual,
+        inputLabel: 'Novo valor',
+        showCancelButton: true,
+        confirmButtonText: 'Salvar',
+        preConfirm: (novoValor) => {
+          novoValor = novoValor.replace(/[^0-9,\.]/g, '').replace(',', '.');
+          if (!novoValor || isNaN(novoValor)) {
+            Swal.showValidationMessage("Digite um valor válido");
+            return false;
+          }
+          update(ref(db, `gastos/${hoje}/${id}`), { valor: parseFloat(novoValor).toFixed(2) });
         }
       });
-    });
+    }
+
+    window.excluirGasto = function (id) {
+      Swal.fire({
+        title: 'Tem certeza?',
+        text: 'Deseja excluir este gasto?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          remove(ref(db, `gastos/${hoje}/${id}`));
+        }
+      });
+    }
+
+    carregarGastos();
   </script>
 </body>
 </html>
