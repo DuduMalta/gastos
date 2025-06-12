@@ -4,155 +4,140 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+      margin: 0; font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f; color: #e0e0e0;
+    }
+    .container {
+      max-width: 600px; margin: auto; padding: 20px;
     }
     h1 {
-      text-shadow: 0 0 5px #0ff;
+      text-align: center; color: #00ffc3;
     }
-    #gastoForm, #gastosList {
-      background-color: #1a1a1a;
-      border-radius: 15px;
-      padding: 1rem;
-      margin: 1rem 0;
-      box-shadow: 0 0 15px #0ff3;
-      width: 100%;
-      max-width: 600px;
+    input, button {
+      width: 100%; padding: 10px; margin: 5px 0;
+      border: none; border-radius: 10px;
     }
-    input, select, button {
-      width: 100%;
-      padding: 0.75rem;
-      margin: 0.5rem 0;
-      border: none;
-      border-radius: 10px;
-      background: #333;
-      color: #fff;
+    input {
+      background: #1e1e1e; color: white;
     }
     button {
-      cursor: pointer;
-      background: #0ff;
-      color: #000;
-      font-weight: bold;
-      transition: 0.3s;
+      background: #00ffc3; color: #000; font-weight: bold;
+      transition: background 0.3s;
     }
-    button:hover {
-      background: #0cc;
-    }
-    .gasto-item {
-      background: #222;
-      margin: 0.5rem 0;
-      padding: 1rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #0ff4;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .gasto-info {
-      flex: 1;
-    }
-    .actions button {
-      margin-left: 0.5rem;
-    }
+    button:hover { background: #00cfa8; }
+    .gasto { background: #1a1a1a; margin: 5px 0; padding: 10px; border-radius: 10px; }
+    .gasto span { display: inline-block; width: 50%; }
+    .dia { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
+    canvas { background: #1e1e1e; border-radius: 10px; margin-top: 20px; }
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-   apiKey: "AIzaSyB_8NDa0J4LqFiyAlqgkOuJbwVxI9X2X2E",
-   authDomain: "controle-gastos-5d942.firebaseapp.com",
-   databaseURL: "https://controle-gastos-5d942-default-rtdb.firebaseio.com",
-   projectId: "controle-gastos-5d942",
-   storageBucket: "controle-gastos-5d942.appspot.com",
-   messagingSenderId: "108583061894",
-   appId: "1:108583061894:web:4c8f8d1e4e8d5e8a4d3e9a"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const gastosRef = collection(db, "gastos");
-
-    const form = document.getElementById("gastoForm");
-    const list = document.getElementById("gastosList");
-
-    async function renderGastos() {
-      list.innerHTML = "";
-      const snap = await getDocs(gastosRef);
-      snap.forEach(docSnap => {
-        const gasto = docSnap.data();
-        const item = document.createElement("div");
-        item.className = "gasto-item";
-        item.innerHTML = `
-          <div class="gasto-info">
-            <strong>${gasto.nome}</strong><br>
-            R$ ${gasto.valor.toFixed(2)} - ${gasto.categoria}<br>
-            <small>${gasto.data}</small>
-          </div>
-          <div class="actions">
-            <button onclick="editarGasto('${docSnap.id}', '${gasto.nome}', ${gasto.valor}, '${gasto.categoria}')">✏️</button>
-            <button onclick="removerGasto('${docSnap.id}')">❌</button>
-          </div>
-        `;
-        list.appendChild(item);
-      });
-    }
-
-    form.onsubmit = async e => {
-      e.preventDefault();
-      const nome = form.nome.value;
-      const valor = parseFloat(form.valor.value);
-      const categoria = form.categoria.value;
-      const data = new Date().toLocaleDateString();
-
-      if (editandoId) {
-        await updateDoc(doc(db, "gastos", editandoId), { nome, valor, categoria });
-        editandoId = null;
-      } else {
-        await addDoc(gastosRef, { nome, valor, categoria, data });
-      }
-
-      form.reset();
-      renderGastos();
-    };
-
-    window.removerGasto = async id => {
-      await deleteDoc(doc(db, "gastos", id));
-      renderGastos();
-    };
-
-    let editandoId = null;
-    window.editarGasto = (id, nome, valor, categoria) => {
-      form.nome.value = nome;
-      form.valor.value = valor;
-      form.categoria.value = categoria;
-      editandoId = id;
-    };
-
-    renderGastos();
-  </script>
 </head>
 <body>
-  <h1>Controle de Gastos 💸</h1>
-  <form id="gastoForm">
-    <input name="nome" placeholder="Descrição" required />
-    <input name="valor" type="number" step="0.01" placeholder="Valor" required />
-    <select name="categoria" required>
-      <option value="Alimentação">Alimentação</option>
-      <option value="Transporte">Transporte</option>
-      <option value="Lazer">Lazer</option>
-      <option value="Outros">Outros</option>
-    </select>
-    <button type="submit">Salvar Gasto</button>
-  </form>
-  <div id="gastosList"></div>
+  <div class="container">
+    <h1>Controle de Gastos</h1>
+    <input id="valor" type="number" placeholder="Valor do gasto" />
+    <button onclick="adicionarGasto()">Salvar Gasto</button>
+    <div id="historico"></div>
+    <canvas id="grafico" height="150"></canvas>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      databaseURL: "https://SEU_DOMINIO.firebaseio.com",
+      projectId: "SEU_PROJETO_ID",
+      storageBucket: "SEU_DOMINIO.appspot.com",
+      messagingSenderId: "ID",
+      appId: "ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function getDataHoje() {
+      const d = new Date();
+      return d.toISOString().split('T')[0];
+    }
+
+    function adicionarGasto() {
+      const valor = parseFloat(document.getElementById('valor').value);
+      if (isNaN(valor)) return;
+      const data = getDataHoje();
+      const id = Date.now();
+      db.ref('gastos/' + data + '/' + id).set({ valor });
+      document.getElementById('valor').value = '';
+    }
+
+    function atualizarGasto(data, id, novoValor) {
+      db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor) });
+    }
+
+    function excluirGasto(data, id) {
+      db.ref('gastos/' + data + '/' + id).remove();
+    }
+
+    const historicoEl = document.getElementById('historico');
+    const ctx = document.getElementById('grafico').getContext('2d');
+    let grafico;
+
+    db.ref('gastos').on('value', snapshot => {
+      const dados = snapshot.val() || {};
+      historicoEl.innerHTML = '';
+      const labels = [], valores = [];
+
+      Object.keys(dados).sort().forEach(data => {
+        const gastos = dados[data];
+        const total = Object.values(gastos).reduce((soma, g) => soma + g.valor, 0);
+        labels.push(data);
+        valores.push(total);
+
+        const diaDiv = document.createElement('div');
+        diaDiv.className = 'dia';
+        diaDiv.innerHTML = `<h3>${data}</h3>`;
+
+        Object.entries(gastos).forEach(([id, gasto]) => {
+          const div = document.createElement('div');
+          div.className = 'gasto';
+
+          div.innerHTML = `
+            <span>R$ ${gasto.valor.toFixed(2)}</span>
+            <button onclick="editarGasto('${data}','${id}', ${gasto.valor})">✏️</button>
+            <button onclick="excluirGasto('${data}','${id}')">🗑️</button>`;
+
+          diaDiv.appendChild(div);
+        });
+
+        historicoEl.appendChild(diaDiv);
+      });
+
+      if (grafico) grafico.destroy();
+      grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total por dia',
+            backgroundColor: '#00ffc3',
+            data: valores
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    });
+
+    function editarGasto(data, id, valorAtual) {
+      const novoValor = prompt("Editar valor:", valorAtual);
+      if (novoValor !== null && !isNaN(novoValor)) {
+        atualizarGasto(data, id, novoValor);
+      }
+    }
+  </script>
 </body>
 </html>
