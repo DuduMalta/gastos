@@ -47,6 +47,7 @@
       <option value="Online">Online</option>
       <option value="Outros">Outros</option>
     </select>
+    <input id="dataCustom" type="date" />
     <button onclick="adicionarGasto()">Salvar Gasto</button>
     <div id="historico"></div>
     <canvas id="grafico" height="150"></canvas>
@@ -67,17 +68,24 @@
 
     function getDataHoje() {
       const d = new Date();
-      return d.toLocaleDateString('pt-BR'); // ex: 12/06/2025
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    function formatarDataInputParaBR(input) {
+      const [ano, mes, dia] = input.split('-');
+      return `${dia}/${mes}/${ano}`;
     }
 
     function adicionarGasto() {
       const valor = parseFloat(document.getElementById('valor').value);
       const categoria = document.getElementById('categoria').value;
+      const dataInput = document.getElementById('dataCustom').value;
       if (isNaN(valor)) return;
-      const data = getDataHoje();
+      const data = dataInput ? formatarDataInputParaBR(dataInput) : getDataHoje();
       const id = Date.now();
       db.ref('gastos/' + data + '/' + id).set({ valor, categoria });
       document.getElementById('valor').value = '';
+      document.getElementById('dataCustom').value = '';
     }
 
     function atualizarGasto(data, id, novoValor, novaCategoria) {
