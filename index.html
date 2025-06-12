@@ -1,125 +1,180 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Controle de Gastos</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    .gasto { border: 1px solid #ccc; margin: 10px 0; padding: 10px; }
-    button { margin-right: 5px; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Controle de Gastos Mensais</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-  <h2>Registrar Gasto</h2>
-  <form id="form-gasto">
-    <input type="text" id="descricao" placeholder="Descrição" required />
-    <input type="number" id="valor" placeholder="Valor" required />
-    <input type="date" id="data" required />
-    <input type="text" id="categoria" placeholder="Categoria" required />
-    <button type="submit">Adicionar Gasto</button>
-  </form>
+    <h1>Controle de Gastos - <span id="mesAtual"></span></h1>
 
-  <h2>Lista de Gastos</h2>
-  <div id="lista-gastos"></div>
+    <form id="formGasto">
+        <input type="date" id="data" required>
+        <input type="text" id="categoria" placeholder="Categoria" required>
+        <input type="number" id="valor" placeholder="Valor" required>
+        <button type="submit">Adicionar Gasto</button>
+    </form>
 
-  <script>
-    // Configuração do Firebase
-    const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_DOMINIO.firebaseapp.com",
-      databaseURL: "https://SEU_DOMINIO.firebaseio.com",
-      projectId: "SEU_PROJETO_ID",
-      storageBucket: "SEU_BUCKET.appspot.com",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId: "SUA_APP_ID"
-    };
+    <h2>Total do Mês: <span id="totalMes">R$ 0,00</span></h2>
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    <button onclick="exportarEResetar()">Exportar e Resetar</button>
 
-    const form = document.getElementById("form-gasto");
-    const lista = document.getElementById("lista-gastos");
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="listaGastos"></tbody>
+    </table>
 
-    // Adicionar gasto
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const descricao = document.getElementById("descricao").value.trim();
-      const valor = parseFloat(document.getElementById("valor").value);
-      const data = document.getElementById("data").value;
-      const categoria = document.getElementById("categoria").value.trim();
+    <canvas id="graficoGastos" width="400" height="200"></canvas>
 
-      if (!descricao || isNaN(valor) || !data || !categoria) {
-        alert("Preencha todos os campos corretamente.");
-        return;
-      }
+    <script>
+        let gastos = [];
+        let mesAtual = "";
 
-      const novoGasto = {
-        descricao,
-        valor,
-        data,
-        categoria
-      };
-
-      database.ref("gastos").push(novoGasto);
-      form.reset();
-    });
-
-    // Carregar e mostrar gastos
-    function carregarGastos() {
-      database.ref("gastos").on("value", function (snapshot) {
-        lista.innerHTML = "";
-        snapshot.forEach(function (childSnapshot) {
-          const id = childSnapshot.key;
-          const gasto = childSnapshot.val();
-
-          const div = document.createElement("div");
-          div.className = "gasto";
-          div.innerHTML = `
-            <strong>${gasto.descricao}</strong><br>
-            Valor: R$ ${gasto.valor.toFixed(2)}<br>
-            Data: ${gasto.data}<br>
-            Categoria: ${gasto.categoria}<br>
-            <button onclick="editarGasto('${id}', '${gasto.descricao}', '${gasto.valor}', '${gasto.data}', '${gasto.categoria}')">Editar</button>
-            <button onclick="excluirGasto('${id}')">Excluir</button>
-          `;
-          lista.appendChild(div);
+        document.getElementById('formGasto').addEventListener('submit', function (e) {
+            e.preventDefault();
+            adicionarGasto();
         });
-      });
-    }
 
-    // Excluir gasto
-    function excluirGasto(id) {
-      if (confirm("Tem certeza que deseja excluir este gasto?")) {
-        database.ref("gastos/" + id).remove();
-      }
-    }
+        function atualizarMesAtual() {
+            const hoje = new Date();
+            const opcoes = { month: 'long', year: 'numeric' };
+            mesAtual = hoje.toLocaleDateString('pt-BR', opcoes);
+            document.getElementById('mesAtual').textContent = mesAtual;
+        }
 
-    // Editar gasto
-    function editarGasto(id, descricao, valor, data, categoria) {
-      const novaDescricao = prompt("Descrição:", descricao);
-      const novoValor = parseFloat(prompt("Valor:", valor));
-      const novaData = prompt("Data (YYYY-MM-DD):", data);
-      const novaCategoria = prompt("Categoria:", categoria);
+        function adicionarGasto() {
+            const data = document.getElementById('data').value;
+            const categoria = document.getElementById('categoria').value;
+            const valor = parseFloat(document.getElementById('valor').value);
 
-      if (!novaDescricao || isNaN(novoValor) || !novaData || !novaCategoria) {
-        alert("Valores inválidos.");
-        return;
-      }
+            if (!data || !categoria || isNaN(valor)) {
+                alert('Preencha todos os campos corretamente.');
+                return;
+            }
 
-      const gastoAtualizado = {
-        descricao: novaDescricao,
-        valor: novoValor,
-        data: novaData,
-        categoria: novaCategoria
-      };
+            const novoGasto = { data, categoria, valor, key: Date.now().toString() };
+            gastos.push(novoGasto);
+            salvarGastos();
+            carregarGastos();
 
-      database.ref("gastos/" + id).update(gastoAtualizado);
-    }
+            document.getElementById('formGasto').reset();
+        }
 
-    // Inicializar
-    carregarGastos();
-  </script>
+        function removerGasto(key) {
+            gastos = gastos.filter(gasto => gasto.key !== key);
+            salvarGastos();
+            carregarGastos();
+        }
+
+        function salvarGastos() {
+            localStorage.setItem('gastos_' + mesAtual, JSON.stringify(gastos));
+        }
+
+        function carregarGastos() {
+            const dadosSalvos = localStorage.getItem('gastos_' + mesAtual);
+            gastos = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+
+            const lista = document.getElementById('listaGastos');
+            lista.innerHTML = "";
+
+            let total = 0;
+
+            gastos.forEach(gasto => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${gasto.data}</td>
+                    <td>${gasto.categoria}</td>
+                    <td>R$ ${gasto.valor.toFixed(2)}</td>
+                    <td class="actions">
+                        <button onclick="removerGasto('${gasto.key}')" class="btn-danger" style="padding: 5px 10px; font-size: 0.8rem;">×</button>
+                    </td>
+                `;
+                lista.appendChild(row);
+                total += gasto.valor;
+            });
+
+            document.getElementById('totalMes').textContent = `R$ ${total.toFixed(2)}`;
+            atualizarGrafico();
+        }
+
+        function atualizarGrafico() {
+            const ctx = document.getElementById('graficoGastos').getContext('2d');
+
+            const categorias = {};
+            gastos.forEach(gasto => {
+                categorias[gasto.categoria] = (categorias[gasto.categoria] || 0) + gasto.valor;
+            });
+
+            const labels = Object.keys(categorias);
+            const valores = Object.values(categorias);
+
+            if (window.grafico) window.grafico.destroy();
+
+            window.grafico = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gastos por Categoria',
+                        data: valores,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#8E44AD', '#2ECC71', '#E67E22'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Distribuição por Categoria - ${mesAtual}`,
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.chart._metasets[context.datasetIndex].total;
+                                    const percentage = ((value / total) * 100).toFixed(2);
+                                    return `${label}: R$ ${value.toFixed(2)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function exportarEResetar() {
+            if (confirm(`Deseja exportar os gastos de ${mesAtual} e iniciar um novo mês?`)) {
+                const ws = XLSX.utils.json_to_sheet(gastos);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+
+                XLSX.writeFile(wb, `Gastos_${mesAtual.replace(' ', '_')}.xlsx`);
+
+                // Limpar dados e reiniciar
+                localStorage.removeItem('gastos_' + mesAtual);
+                gastos = [];
+                carregarGastos();
+            }
+        }
+
+        window.onload = function () {
+            atualizarMesAtual();
+            carregarGastos();
+        };
+    </script>
 </body>
 </html>
