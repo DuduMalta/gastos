@@ -94,19 +94,25 @@
       messagingSenderId: "1017028955293",
       appId: "1:1017028955293:web:3269e4402643b48613d874"
     };
-    firebase.initializeApp(firebaseConfig);
+
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     const btn = document.getElementById('btnSalvar');
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const valorInput = document.getElementById('valor');
       const valor = parseFloat(valorInput.value);
-      if (!isNaN(valor)) {
-        const data = new Date().toISOString().split('T')[0];
-        const id = Date.now();
-        db.ref(`gastos/${data}/${id}`).set({ valor }).then(() => {
-          valorInput.value = '';
-        });
+      if (isNaN(valor)) return;
+
+      const data = new Date().toISOString().split('T')[0];
+      const id = Date.now();
+
+      try {
+        await db.ref(`gastos/${data}/${id}`).set({ valor });
+        valorInput.value = '';
+      } catch (error) {
+        console.error("Erro ao salvar gasto:", error);
+        alert("Erro ao salvar gasto. Verifique as permissões no Firebase.");
       }
     });
 
