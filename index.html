@@ -4,178 +4,196 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      background: #0d0d0d; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0;
+      margin: 0; font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f; color: #e0e0e0;
     }
     .container {
-      max-width: 700px; margin: auto; padding: 20px;
+      max-width: 600px; margin: auto; padding: 20px;
     }
     h1 {
       text-align: center; color: #00ffc3;
     }
     input, select, button {
-      width: 100%; padding: 10px; margin: 5px 0; border-radius: 10px; border: none;
+      width: 100%; padding: 10px; margin: 5px 0;
+      border: none; border-radius: 10px;
     }
     input, select {
       background: #1e1e1e; color: white;
     }
     button {
-      background: #00ffc3; color: black; font-weight: bold;
+      background: #00ffc3; color: #000; font-weight: bold;
+      transition: background 0.3s;
     }
-    button:hover {
-      background: #00cfa8;
-    }
-    .gasto {
-      background: #1a1a1a; padding: 10px; border-radius: 10px; margin: 5px 0;
-    }
-    .gasto span {
-      display: block;
-    }
-    .dia {
-      border-top: 1px solid #333; margin-top: 20px; padding-top: 10px;
-    }
-    canvas {
-      background: #1e1e1e; border-radius: 10px; margin-top: 20px;
-    }
+    button:hover { background: #00cfa8; }
+    .gasto { background: #1a1a1a; margin: 5px 0; padding: 10px; border-radius: 10px; }
+    .gasto span { display: inline-block; width: 100%; margin: 2px 0; }
+    .dia { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; }
+    canvas { background: #1e1e1e; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>Controle de Gastos</h1>
-  <input id="valor" type="number" placeholder="Valor (ex: 50)" />
-  <select id="categoria">
-    <option value="Lanche">Lanche</option>
-    <option value="Bebidas">Bebidas</option>
-    <option value="Online">Online</option>
-    <option value="Outros">Outros</option>
-  </select>
-  <button onclick="adicionarGasto()">Salvar Gasto</button>
-  <div id="historico"></div>
-  <canvas id="grafico" height="150"></canvas>
-</div>
+  <div class="container">
+    <h1>Controle de Gastos</h1>
+    <input id="valor" type="number" placeholder="Valor do gasto (ex: 50)" />
+    <select id="categoria">
+      <option value="Lanche">Lanche</option>
+      <option value="Bebidas">Bebidas</option>
+      <option value="Online">Online</option>
+      <option value="Outros">Outros</option>
+    </select>
+    <button onclick="adicionarGasto()">Salvar Gasto</button>
+    <div id="historico"></div>
+    <canvas id="grafico" height="150"></canvas>
+  </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
-    authDomain: "financia-dudu.firebaseapp.com",
-    databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
-    projectId: "financia-dudu",
-    storageBucket: "financia-dudu.appspot.com",
-    messagingSenderId: "1017028955293",
-    appId: "1:1017028955293:web:3269e4402643b48613d874"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
+      authDomain: "financia-dudu.firebaseapp.com",
+      databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
+      projectId: "financia-dudu",
+      storageBucket: "financia-dudu.firebasestorage.app",
+      messagingSenderId: "1017028955293",
+      appId: "1:1017028955293:web:3269e4402643b48613d874"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  function dataHoje() {
-    return new Date().toISOString().split('T')[0];
-  }
+    function getDataHoje() {
+      const d = new Date();
+      return d.toLocaleDateString('pt-BR'); // ex: 12/06/2025
+    }
 
-  function adicionarGasto() {
-    const valor = parseFloat(document.getElementById('valor').value);
-    const categoria = document.getElementById('categoria').value;
-    if (isNaN(valor)) return;
-    const data = dataHoje();
-    const id = Date.now();
-    db.ref('gastos/' + data + '/' + id).set({ valor, categoria });
-    document.getElementById('valor').value = '';
-  }
+    function adicionarGasto() {
+      const valor = parseFloat(document.getElementById('valor').value);
+      const categoria = document.getElementById('categoria').value;
+      if (isNaN(valor)) return;
+      const data = getDataHoje();
+      const id = Date.now();
+      db.ref('gastos/' + data + '/' + id).set({ valor, categoria });
+      document.getElementById('valor').value = '';
+    }
 
-  function atualizarGasto(data, id, novoValor, novaCategoria) {
-    db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor), categoria: novaCategoria });
-  }
+    function atualizarGasto(data, id, novoValor, novaCategoria) {
+      db.ref('gastos/' + data + '/' + id).update({ valor: parseFloat(novoValor), categoria: novaCategoria });
+    }
 
-  function excluirGasto(data, id) {
-    Swal.fire({
-      title: 'Deseja excluir?',
-      showCancelButton: true,
-      confirmButtonText: 'Sim',
-      cancelButtonText: 'Cancelar',
-    }).then(res => {
-      if (res.isConfirmed) db.ref('gastos/' + data + '/' + id).remove();
-    });
-  }
+    function excluirGasto(data, id) {
+      Swal.fire({
+        title: 'Tem certeza?',
+        text: "Isso irá apagar permanentemente o gasto!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#00ffc3',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sim, apagar!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          db.ref('gastos/' + data + '/' + id).remove();
+        }
+      });
+    }
 
-  function editarGasto(data, id, valorAtual, categoriaAtual) {
-    Swal.fire({
-      title: 'Editar Gasto',
-      html: `<input id="novoValor" type="number" class="swal2-input" value="${valorAtual}">
-             <select id="novaCategoria" class="swal2-input">
-               <option ${categoriaAtual=='Lanche'?'selected':''}>Lanche</option>
-               <option ${categoriaAtual=='Bebidas'?'selected':''}>Bebidas</option>
-               <option ${categoriaAtual=='Online'?'selected':''}>Online</option>
-               <option ${categoriaAtual=='Outros'?'selected':''}>Outros</option>
-             </select>`,
-      preConfirm: () => [
-        document.getElementById('novoValor').value,
-        document.getElementById('novaCategoria').value
-      ]
-    }).then(result => {
-      if (result.isConfirmed) {
-        const [novoValor, novaCategoria] = result.value;
-        if (!isNaN(novoValor)) atualizarGasto(data, id, novoValor, novaCategoria);
-      }
-    });
-  }
+    function editarGasto(data, id, valorAtual, categoriaAtual) {
+      Swal.fire({
+        title: 'Editar Gasto',
+        html:
+          `<input id="valorNovo" type="number" class="swal2-input" value="${valorAtual}">
+          <select id="categoriaNova" class="swal2-input">
+            <option value="Lanche" ${categoriaAtual === 'Lanche' ? 'selected' : ''}>Lanche</option>
+            <option value="Bebidas" ${categoriaAtual === 'Bebidas' ? 'selected' : ''}>Bebidas</option>
+            <option value="Online" ${categoriaAtual === 'Online' ? 'selected' : ''}>Online</option>
+            <option value="Outros" ${categoriaAtual === 'Outros' ? 'selected' : ''}>Outros</option>
+          </select>`,
+        preConfirm: () => {
+          return [
+            parseFloat(document.getElementById('valorNovo').value),
+            document.getElementById('categoriaNova').value
+          ];
+        }
+      }).then((result) => {
+        if (result.value) {
+          const [novoValor, novaCategoria] = result.value;
+          if (!isNaN(novoValor)) atualizarGasto(data, id, novoValor, novaCategoria);
+        }
+      });
+    }
 
-  const historicoEl = document.getElementById('historico');
-  const ctx = document.getElementById('grafico').getContext('2d');
-  let grafico;
+    const historicoEl = document.getElementById('historico');
+    const ctx = document.getElementById('grafico').getContext('2d');
+    let grafico;
 
-  db.ref('gastos').on('value', snapshot => {
-    const dados = snapshot.val() || {};
-    historicoEl.innerHTML = '';
-    const labels = [], valores = [];
+    db.ref('gastos').on('value', snapshot => {
+      const dados = snapshot.val() || {};
+      historicoEl.innerHTML = '';
+      const labels = [], valores = [];
 
-    Object.keys(dados).sort().forEach(data => {
-      const gastos = dados[data];
-      let total = 0;
-      const diaDiv = document.createElement('div');
-      diaDiv.className = 'dia';
-      diaDiv.innerHTML = `<h3>${data}</h3>`;
-
-      Object.entries(gastos).forEach(([id, g]) => {
-        total += g.valor;
-        const div = document.createElement('div');
-        div.className = 'gasto';
-        div.innerHTML = `
-          <span><b>R$</b> ${g.valor.toFixed(2)}</span>
-          <span>Categoria: ${g.categoria}</span>
-          <span>Data: ${data}</span>
-          <button onclick="editarGasto('${data}', '${id}', ${g.valor}, '${g.categoria}')">✏️</button>
-          <button onclick="excluirGasto('${data}', '${id}')">🗑️</button>
-        `;
-        diaDiv.appendChild(div);
+      const datasOrdenadas = Object.keys(dados).sort((a,b)=>{
+        const [da,ma,aa] = a.split('/');
+        const [db,mb,ab] = b.split('/');
+        return new Date(ab, mb-1, db) - new Date(aa, ma-1, da);
       });
 
-      const totalSpan = document.createElement('span');
-      totalSpan.innerHTML = `<b>Total:</b> R$ ${total.toFixed(2)}`;
-      diaDiv.appendChild(totalSpan);
+      datasOrdenadas.forEach(data => {
+        const gastos = dados[data];
+        const ids = Object.keys(gastos).sort((a, b) => b - a);
 
-      historicoEl.appendChild(diaDiv);
+        let total = 0;
+        const diaDiv = document.createElement('div');
+        diaDiv.className = 'dia';
+        diaDiv.innerHTML = `<h3>${data}</h3>`;
 
-      labels.push(data);
-      valores.push(total);
+        ids.forEach(id => {
+          const gasto = gastos[id];
+          total += gasto.valor;
+
+          const div = document.createElement('div');
+          div.className = 'gasto';
+
+          div.innerHTML = `
+            <span>💰 Valor: R$ ${gasto.valor.toFixed(2)}</span>
+            <span>📅 Data: ${data}</span>
+            <span>🏷️ Categoria: ${gasto.categoria}</span>
+            <button onclick="editarGasto('${data}','${id}', ${gasto.valor}, '${gasto.categoria}')">✏️ Editar</button>
+            <button onclick="excluirGasto('${data}','${id}')">🗑️ Excluir</button>
+          `;
+
+          diaDiv.appendChild(div);
+        });
+
+        const totalDiv = document.createElement('div');
+        totalDiv.innerHTML = `<strong>Total do dia: R$ ${total.toFixed(2)}</strong>`;
+        diaDiv.appendChild(totalDiv);
+
+        historicoEl.appendChild(diaDiv);
+
+        labels.push(data);
+        valores.push(total);
+      });
+
+      if (grafico) grafico.destroy();
+      grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total por dia',
+            backgroundColor: '#00ffc3',
+            data: valores
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
     });
-
-    if (grafico) grafico.destroy();
-    grafico = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{ label: 'Total por dia', backgroundColor: '#00ffc3', data: valores }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-  });
-</script>
+  </script>
 </body>
 </html>
