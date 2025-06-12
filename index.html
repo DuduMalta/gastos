@@ -138,3 +138,43 @@
 </script>
 </body>
 </html>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB99GSobd38UTduAIDDje4zsJpv6gq6eE4",
+    authDomain: "financia-dudu.firebaseapp.com",
+    databaseURL: "https://financia-dudu-default-rtdb.firebaseio.com",
+    projectId: "financia-dudu",
+    storageBucket: "financia-dudu.appspot.com",
+    messagingSenderId: "1017028955293",
+    appId: "1:1017028955293:web:3269e4402643b48613d874"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const valorInput = document.getElementById("valor");
+
+  window.adicionarGasto = async function () {
+    let valor = valorInput.value.trim().replace(",", ".");
+    if (!valor || isNaN(valor) || parseFloat(valor) <= 0) {
+      alert("Digite um valor numérico válido.");
+      return;
+    }
+    const dataAtual = new Date().toISOString().split("T")[0];
+    const refDia = ref(db, `gastos/${dataAtual}`);
+    const novoGastoRef = push(refDia);
+
+    try {
+      await set(novoGastoRef, { valor: parseFloat(valor) });
+      alert("Gasto salvo com sucesso!");
+      valorInput.value = "";
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao salvar no Firebase.");
+    }
+  };
+</script>
+
